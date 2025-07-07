@@ -3,7 +3,7 @@
     "name": "uaua",
     "slug": "uaua",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "uaua",
     "userInterfaceStyle": "automatic",
@@ -55,9 +55,7 @@
             "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
           ],
           "androidForegroundService": true,
-          "androidFSTypes": [
-            "mediaPlayback"
-          ]
+          "androidFSTypes": ["mediaPlayback"]
         }
       ]
     ],
