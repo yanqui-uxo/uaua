@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import {
   Gesture,
   GestureDetector,
-  GestureStateManager,
   GestureTouchEvent,
   TouchData,
 } from "react-native-gesture-handler";
@@ -12,6 +11,11 @@ import { Canvas, Circle } from "@shopify/react-native-skia";
 
 type Tone = { oscillator: OscillatorNode; gainNode: GainNode };
 
+function disconnectTone(tone: Tone) {
+  tone.oscillator.disconnect();
+  tone.gainNode.disconnect();
+}
+
 export default function Theremin() {
   const audioContextRef = useRef<AudioContext>(new AudioContext());
 
@@ -20,27 +24,20 @@ export default function Theremin() {
   const heightRef = useRef<number | null>(null);
   const tonesRef = useRef<Map<number, Tone>>(new Map());
 
-  function onTouchRemove(e: GestureTouchEvent, manager: GestureStateManager) {
+  function onTouchRemove(e: GestureTouchEvent) {
     const changedIds = e.changedTouches.map((t) => t.id);
+
+    // for some reason allTouches can contain a touch that was just removed
     const confirmedTouches = e.allTouches.filter(
       (t) => !changedIds.includes(t.id)
     );
     setTouches(confirmedTouches);
 
-    if (confirmedTouches.length === 0) {
-      // sanity check
-      tonesRef.current = new Map();
-      audioContextRef.current.close();
-      audioContextRef.current = new AudioContext();
-    } else {
-      const confirmedIds = confirmedTouches.map((t) => t.id);
-      [...tonesRef.current.entries()]
-        .filter(([id, _]) => !confirmedIds.includes(id))
-        .forEach(([id, tone]) => {
-          tone.gainNode.disconnect();
-          tone.oscillator.disconnect();
-          tonesRef.current.delete(id);
-        });
+    const confirmedIds = confirmedTouches.map((t) => t.id);
+    for (const [id, tone] of tonesRef.current) {
+      if (!confirmedIds.includes(id)) {
+        disconnectTone(tone);
+      }
     }
   }
 
@@ -53,9 +50,14 @@ export default function Theremin() {
   }
 
   const gesture = Gesture.Pan()
-    .onTouchesDown((e, manager) => {
+    .onTouchesDown((e) => {
       setTouches(e.allTouches);
-      e.changedTouches.forEach((t) => {
+      for (const t of e.changedTouches) {
+        const oldTone = tonesRef.current.get(t.id);
+        if (oldTone) {
+          disconnectTone(oldTone);
+        }
+
         const oscillator = audioContextRef.current.createOscillator();
         const gainNode = audioContextRef.current.createGain();
         tonesRef.current.set(t.id, { oscillator, gainNode });
@@ -64,16 +66,18 @@ export default function Theremin() {
         oscillator.connect(gainNode);
         gainNode.connect(audioContextRef.current.destination);
         oscillator.start();
-      });
+      }
     })
     .onTouchesMove((e) => {
       setTouches(e.allTouches);
 
-      e.changedTouches.forEach((t) => {
-        const { oscillator, gainNode } = tonesRef.current.get(t.id)!;
-        oscillator.frequency.value = xToFrequency(t.x);
-        gainNode.gain.value = yToGain(t.y);
-      });
+      for (const touch of e.changedTouches) {
+        const tone = tonesRef.current.get(touch.id);
+        if (tone) {
+          tone.oscillator.frequency.value = xToFrequency(touch.x);
+          tone.gainNode.gain.value = yToGain(touch.y);
+        }
+      }
     })
     .onTouchesUp(onTouchRemove)
     .onTouchesCancelled(onTouchRemove)
