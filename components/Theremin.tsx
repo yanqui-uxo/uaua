@@ -59,14 +59,8 @@ export default function Theremin() {
         const oscillator = audioContextRef.current.createOscillator();
         const gainNode = audioContextRef.current.createGain();
         tonesRef.current.set(t.id, { oscillator, gainNode });
-        oscillator.frequency.setValueAtTime(
-          xToFrequency(t.x),
-          audioContextRef.current.currentTime
-        );
-        gainNode.gain.setValueAtTime(
-          yToGain(t.y),
-          audioContextRef.current.currentTime
-        );
+        oscillator.frequency.value = xToFrequency(t.x);
+        gainNode.gain.value = yToGain(t.y);
         oscillator.connect(gainNode);
         gainNode.connect(audioContextRef.current.destination);
         oscillator.start();
@@ -76,15 +70,9 @@ export default function Theremin() {
       setTouches(e.allTouches);
 
       e.changedTouches.forEach((t) => {
-        const tone = tonesRef.current.get(t.id);
-        tone?.oscillator.frequency.setValueAtTime(
-          xToFrequency(t.x),
-          audioContextRef.current.currentTime
-        );
-        tone?.gainNode.gain.setValueAtTime(
-          yToGain(t.y),
-          audioContextRef.current.currentTime
-        );
+        const { oscillator, gainNode } = tonesRef.current.get(t.id)!;
+        oscillator.frequency.value = xToFrequency(t.x);
+        gainNode.gain.value = yToGain(t.y);
       });
     })
     .onTouchesUp(onTouchRemove)
