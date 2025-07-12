@@ -5,15 +5,50 @@ import {
   GestureTouchEvent,
   TouchData,
 } from "react-native-gesture-handler";
-import { AudioContext, GainNode, OscillatorNode } from "react-native-audio-api";
+import {
+  AudioContext,
+  AudioNode,
+  AudioParam,
+  BaseAudioContext,
+  GainNode,
+  OscillatorNode,
+} from "react-native-audio-api";
 import { StyleSheet } from "react-native";
 import { Canvas, Circle } from "@shopify/react-native-skia";
 
-type Tone = { oscillator: OscillatorNode; gainNode: GainNode };
+class Tone {
+  #oscillatorNode: OscillatorNode;
+  #gainNode: GainNode;
 
-function disconnectTone(tone: Tone) {
-  tone.oscillator.disconnect();
-  tone.gainNode.disconnect();
+  constructor(audioContext: BaseAudioContext) {
+    this.#oscillatorNode = audioContext.createOscillator();
+    this.#gainNode = audioContext.createGain();
+    this.#oscillatorNode.connect(this.#gainNode);
+  }
+
+  get frequency(): AudioParam {
+    return this.#oscillatorNode.frequency;
+  }
+
+  get gain(): AudioParam {
+    return this.#gainNode.gain;
+  }
+
+  connect(destination: AudioNode) {
+    this.#gainNode.connect(destination);
+  }
+
+  disconnect() {
+    this.#gainNode.disconnect();
+  }
+
+  start(time?: number) {
+    this.#oscillatorNode.start(time);
+  }
+
+  stop(time?: number) {
+    this.#oscillatorNode.stop(time);
+  }
 }
 
 export default function Theremin() {
@@ -36,7 +71,7 @@ export default function Theremin() {
     const confirmedIds = confirmedTouches.map((t) => t.id);
     for (const [id, tone] of tonesRef.current) {
       if (!confirmedIds.includes(id)) {
-        disconnectTone(tone);
+        tone.disconnect();
       }
     }
   }
@@ -55,17 +90,15 @@ export default function Theremin() {
       for (const t of e.changedTouches) {
         const oldTone = tonesRef.current.get(t.id);
         if (oldTone) {
-          disconnectTone(oldTone);
+          oldTone.disconnect();
         }
 
-        const oscillator = audioContextRef.current.createOscillator();
-        const gainNode = audioContextRef.current.createGain();
-        tonesRef.current.set(t.id, { oscillator, gainNode });
-        oscillator.frequency.value = xToFrequency(t.x);
-        gainNode.gain.value = yToGain(t.y);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContextRef.current.destination);
-        oscillator.start();
+        const tone = new Tone(audioContextRef.current);
+        tonesRef.current.set(t.id, tone);
+        tone.frequency.value = xToFrequency(t.x);
+        tone.gain.value = yToGain(t.y);
+        tone.connect(audioContextRef.current.destination);
+        tone.start();
       }
     })
     .onTouchesMove((e) => {
@@ -74,8 +107,8 @@ export default function Theremin() {
       for (const touch of e.changedTouches) {
         const tone = tonesRef.current.get(touch.id);
         if (tone) {
-          tone.oscillator.frequency.value = xToFrequency(touch.x);
-          tone.gainNode.gain.value = yToGain(touch.y);
+          tone.frequency.value = xToFrequency(touch.x);
+          tone.gain.value = yToGain(touch.y);
         }
       }
     })
