@@ -14,6 +14,7 @@ import {
   GainNode,
   OfflineAudioContext,
   OscillatorNode,
+  OscillatorType,
 } from "react-native-audio-api";
 import { Button, StyleSheet } from "react-native";
 import { Canvas, Circle } from "@shopify/react-native-skia";
@@ -22,8 +23,9 @@ class Tone {
   #oscillatorNode: OscillatorNode;
   #gainNode: GainNode;
 
-  constructor(audioContext: BaseAudioContext) {
+  constructor(audioContext: BaseAudioContext, oscillatorType: OscillatorType) {
     this.#oscillatorNode = audioContext.createOscillator();
+    this.#oscillatorNode.type = oscillatorType;
     this.#gainNode = audioContext.createGain();
     this.#oscillatorNode.connect(this.#gainNode);
   }
@@ -56,6 +58,7 @@ class Tone {
 type ToneRecordingStep = { time: number; frequency: number; gain: number };
 type ToneRecording = {
   steps: ToneRecordingStep[];
+  oscillatorType: OscillatorType;
   stopTime: number;
 };
 type FullRecording = {
@@ -74,7 +77,10 @@ function fullRecordingToBuffer(
   });
 
   for (const toneRecording of fullRecording.toneRecordings) {
-    const currentTone = new Tone(offlineAudioContext);
+    const currentTone = new Tone(
+      offlineAudioContext,
+      toneRecording.oscillatorType
+    );
     currentTone.connect(offlineAudioContext.destination);
 
     const startTime = toneRecording.steps[0].time;
@@ -93,8 +99,16 @@ function fullRecordingToBuffer(
   return offlineAudioContext.startRendering();
 }
 
+const oscillatorTypes: OscillatorType[] = [
+  "sine",
+  "square",
+  "sawtooth",
+  "triangle",
+];
 export default function Theremin() {
   const audioContextRef = useRef<AudioContext>(new AudioContext());
+
+  const [oscillatorType, setOscillatorType] = useState<OscillatorType>("sine");
 
   const [touches, setTouches] = useState<TouchData[]>([]);
   const widthRef = useRef<number | null>(null);
@@ -120,11 +134,13 @@ export default function Theremin() {
         toneRecordingsRef.current.get(id)!.push({
           steps,
           stopTime: audioContextRef.current.currentTime - recordingStartTime,
+          oscillatorType,
         });
         toneRecordingStepsRef.current.delete(id);
       }
     }
   }
+
   function onTouchRemove(e: GestureTouchEvent) {
     const changedIds = e.changedTouches.map((t) => t.id);
 
@@ -149,7 +165,7 @@ export default function Theremin() {
   }
   function yToGain(y: number): number {
     const height = heightRef.current!;
-    return (height - y) / height;
+    return ((height - y) / height) * 0.5;
   }
 
   const gesture = Gesture.Pan()
@@ -161,7 +177,7 @@ export default function Theremin() {
           oldTone.disconnect();
         }
 
-        const tone = new Tone(audioContextRef.current);
+        const tone = new Tone(audioContextRef.current, oscillatorType);
         tonesRef.current.set(t.id, tone);
         const frequency = xToFrequency(t.x);
         const gain = yToGain(t.y);
@@ -214,6 +230,14 @@ export default function Theremin() {
 
   return (
     <>
+      {oscillatorTypes.map((ot) => (
+        <Button
+          title={ot}
+          key={ot}
+          color={oscillatorType === ot ? "blue" : "gray"}
+          onPress={() => setOscillatorType(ot)}
+        />
+      ))}
       <GestureDetector gesture={gesture}>
         <Canvas
           style={styles.canvas}
@@ -251,17 +275,16 @@ export default function Theremin() {
           }
         }}
       />
-      {lastRecording && (
-        <Button
-          title="Play recording"
-          onPress={() => {
-            const node = audioContextRef.current.createBufferSource();
-            node.buffer = lastRecording;
-            node.connect(audioContextRef.current.destination);
-            node.start();
-          }}
-        />
-      )}
+      <Button
+        title="Play recording"
+        disabled={lastRecording === null}
+        onPress={() => {
+          const node = audioContextRef.current.createBufferSource();
+          node.buffer = lastRecording;
+          node.connect(audioContextRef.current.destination);
+          node.start();
+        }}
+      />
     </>
   );
 }
