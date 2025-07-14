@@ -6,14 +6,16 @@ import {
   TouchData,
 } from "react-native-gesture-handler";
 import {
+  AudioBuffer,
   AudioContext,
   AudioNode,
   AudioParam,
   BaseAudioContext,
   GainNode,
+  OfflineAudioContext,
   OscillatorNode,
 } from "react-native-audio-api";
-import { StyleSheet } from "react-native";
+import { Button, StyleSheet } from "react-native";
 import { Canvas, Circle } from "@shopify/react-native-skia";
 
 class Tone {
@@ -51,6 +53,46 @@ class Tone {
   }
 }
 
+type ToneRecordingStep = { time: number; frequency: number; gain: number };
+type ToneRecording = {
+  steps: ToneRecordingStep[];
+  stopTime: number;
+};
+type FullRecording = {
+  toneRecordings: ToneRecording[];
+  stopTime: number;
+};
+
+const sampleRate = 44100;
+function fullRecordingToBuffer(
+  fullRecording: FullRecording
+): Promise<AudioBuffer> {
+  const offlineAudioContext = new OfflineAudioContext({
+    numberOfChannels: 2,
+    length: sampleRate * fullRecording.stopTime,
+    sampleRate,
+  });
+
+  for (const toneRecording of fullRecording.toneRecordings) {
+    const currentTone = new Tone(offlineAudioContext);
+    currentTone.connect(offlineAudioContext.destination);
+
+    const startTime = toneRecording.steps[0].time;
+    currentTone.start(startTime);
+    currentTone.stop(toneRecording.stopTime);
+
+    for (const recordingStep of toneRecording.steps) {
+      currentTone.frequency.setValueAtTime(
+        recordingStep.frequency,
+        recordingStep.time
+      );
+      currentTone.gain.setValueAtTime(recordingStep.gain, recordingStep.time);
+    }
+  }
+
+  return offlineAudioContext.startRendering();
+}
+
 export default function Theremin() {
   const audioContextRef = useRef<AudioContext>(new AudioContext());
 
@@ -59,6 +101,30 @@ export default function Theremin() {
   const heightRef = useRef<number | null>(null);
   const tonesRef = useRef<Map<number, Tone>>(new Map());
 
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(
+    null
+  );
+  const toneRecordingsRef = useRef<Map<number, ToneRecording[]>>(new Map());
+  const toneRecordingStepsRef = useRef<Map<number, ToneRecordingStep[]>>(
+    new Map()
+  );
+  const [lastRecording, setLastRecording] = useState<AudioBuffer | null>(null);
+
+  function toneRecordingStepsToToneRecording(id: number) {
+    if (recordingStartTime) {
+      const steps = toneRecordingStepsRef.current.get(id);
+      if (steps) {
+        if (!toneRecordingsRef.current.has(id)) {
+          toneRecordingsRef.current.set(id, []);
+        }
+        toneRecordingsRef.current.get(id)!.push({
+          steps,
+          stopTime: audioContextRef.current.currentTime - recordingStartTime,
+        });
+        toneRecordingStepsRef.current.delete(id);
+      }
+    }
+  }
   function onTouchRemove(e: GestureTouchEvent) {
     const changedIds = e.changedTouches.map((t) => t.id);
 
@@ -72,6 +138,8 @@ export default function Theremin() {
     for (const [id, tone] of tonesRef.current) {
       if (!confirmedIds.includes(id)) {
         tone.disconnect();
+
+        toneRecordingStepsToToneRecording(id);
       }
     }
   }
@@ -95,10 +163,24 @@ export default function Theremin() {
 
         const tone = new Tone(audioContextRef.current);
         tonesRef.current.set(t.id, tone);
-        tone.frequency.value = xToFrequency(t.x);
-        tone.gain.value = yToGain(t.y);
+        const frequency = xToFrequency(t.x);
+        const gain = yToGain(t.y);
+        tone.frequency.value = frequency;
+        tone.gain.value = gain;
         tone.connect(audioContextRef.current.destination);
         tone.start();
+
+        if (recordingStartTime) {
+          if (!toneRecordingStepsRef.current.has(t.id)) {
+            toneRecordingStepsRef.current.set(t.id, []);
+          }
+
+          toneRecordingStepsRef.current.get(t.id)!.push({
+            time: audioContextRef.current.currentTime - recordingStartTime,
+            frequency,
+            gain,
+          });
+        }
       }
     })
     .onTouchesMove((e) => {
@@ -107,8 +189,22 @@ export default function Theremin() {
       for (const touch of e.changedTouches) {
         const tone = tonesRef.current.get(touch.id);
         if (tone) {
-          tone.frequency.value = xToFrequency(touch.x);
-          tone.gain.value = yToGain(touch.y);
+          const frequency = xToFrequency(touch.x);
+          const gain = yToGain(touch.y);
+          tone.frequency.value = frequency;
+          tone.gain.value = gain;
+
+          if (recordingStartTime) {
+            if (!toneRecordingStepsRef.current.has(touch.id)) {
+              toneRecordingStepsRef.current.set(touch.id, []);
+            }
+
+            toneRecordingStepsRef.current.get(touch.id)!.push({
+              time: audioContextRef.current.currentTime - recordingStartTime,
+              frequency,
+              gain,
+            });
+          }
         }
       }
     })
@@ -117,20 +213,56 @@ export default function Theremin() {
     .runOnJS(true);
 
   return (
-    <GestureDetector gesture={gesture}>
-      <Canvas
-        style={styles.canvas}
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          widthRef.current = width;
-          heightRef.current = height;
+    <>
+      <GestureDetector gesture={gesture}>
+        <Canvas
+          style={styles.canvas}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            widthRef.current = width;
+            heightRef.current = height;
+          }}
+        >
+          {touches.map((t) => (
+            <Circle cx={t.x} cy={t.y} r={50} key={t.id}></Circle>
+          ))}
+        </Canvas>
+      </GestureDetector>
+      <Button
+        title={recordingStartTime ? "Stop recording" : "Start recording"}
+        onPress={() => {
+          if (recordingStartTime) {
+            for (const id of toneRecordingStepsRef.current.keys()) {
+              toneRecordingStepsToToneRecording(id);
+            }
+            toneRecordingStepsRef.current = new Map();
+            const fullRecording = {
+              toneRecordings: [...toneRecordingsRef.current.values()].flat(),
+              stopTime:
+                audioContextRef.current.currentTime - recordingStartTime,
+            };
+            toneRecordingsRef.current = new Map();
+            fullRecordingToBuffer(fullRecording).then((b) =>
+              setLastRecording(b)
+            );
+            setRecordingStartTime(null);
+          } else {
+            setRecordingStartTime(audioContextRef.current.currentTime);
+          }
         }}
-      >
-        {touches.map((t) => (
-          <Circle cx={t.x} cy={t.y} r={50} key={t.id}></Circle>
-        ))}
-      </Canvas>
-    </GestureDetector>
+      />
+      {lastRecording && (
+        <Button
+          title="Play recording"
+          onPress={() => {
+            const node = audioContextRef.current.createBufferSource();
+            node.buffer = lastRecording;
+            node.connect(audioContextRef.current.destination);
+            node.start();
+          }}
+        />
+      )}
+    </>
   );
 }
 
