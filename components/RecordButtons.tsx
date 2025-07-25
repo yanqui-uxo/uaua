@@ -1,14 +1,14 @@
 import { Button } from "react-native";
-import { Recorder } from "@/util/recorder";
+import ThereminRecorder from "@/util/theremin_recorder";
 import { useState } from "react";
 import { AudioBuffer, AudioContext } from "react-native-audio-api";
 
-export default function RecordButtons({
+export default function RecordButtons<NodeParams extends unknown[]>({
   audioContext,
   recorder,
 }: {
   audioContext: AudioContext;
-  recorder: Recorder;
+  recorder: ThereminRecorder<NodeParams>;
 }) {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [lastRecording, setLastRecording] = useState<AudioBuffer | null>(null);

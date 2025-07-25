@@ -4,11 +4,12 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import OscillatorTypeSelector from "@/components/OscillatorTypeSelector";
 import RecordButtons from "@/components/RecordButtons";
 import Theremin from "@/components/Theremin";
-import { Recorder } from "@/util/recorder";
+import ThereminRecorder from "@/util/theremin_recorder";
+import ToneThereminNode from "@/util/tone_theremin_node";
 import { useState } from "react";
 
 const audioContext = new AudioContext();
-const recorder = new Recorder(audioContext);
+const recorder = new ThereminRecorder(audioContext, ToneThereminNode);
 export default function Index() {
   const [oscillatorType, setOscillatorType] = useState<OscillatorType>("sine");
   return (
@@ -20,8 +21,9 @@ export default function Index() {
         />
         <Theremin
           audioContext={audioContext}
-          oscillatorType={oscillatorType}
           recorder={recorder}
+          nodeConstructor={ToneThereminNode}
+          params={[oscillatorType]}
         />
         <RecordButtons audioContext={audioContext} recorder={recorder} />
       </SafeAreaView>
