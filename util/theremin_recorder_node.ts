@@ -1,29 +1,30 @@
 import { AudioDestinationNode, BaseAudioContext } from "react-native-audio-api";
-import RecordingIdentifier from "./recording_identifier";
 import ThereminNode, { Coord } from "./theremin_node";
-import ThereminRecorder, { ThereminNodeConstructor } from "./theremin_recorder";
+import ThereminNodeIdentifier, {
+  ThereminNodeMaker,
+} from "./theremin_node_identifier";
+import ThereminRecorder, { Step } from "./theremin_recorder";
 
-export default class ThereminRecorderNode<
-  NodeParams extends unknown[]
-> extends ThereminNode {
+export default class ThereminRecorderNode extends ThereminNode {
   private inner: ThereminNode;
-  private recorder: ThereminRecorder<NodeParams>;
-  private id: RecordingIdentifier<NodeParams>;
+  private recorder: ThereminRecorder;
+  private identifier: ThereminNodeIdentifier;
+  private steps: Step[] = [];
 
   constructor(
     audioContext: BaseAudioContext,
-    recorder: ThereminRecorder<NodeParams>,
-    nodeConstructor: ThereminNodeConstructor<NodeParams>,
-    ...args: NodeParams
+    recorder: ThereminRecorder,
+    nodeMaker: ThereminNodeMaker
   ) {
     super(audioContext);
-    this.inner = new nodeConstructor(audioContext, ...args);
     this.recorder = recorder;
-    this.id = new RecordingIdentifier(args);
+    this.inner = nodeMaker(audioContext);
+    this.identifier = new ThereminNodeIdentifier(nodeMaker);
+    this.recorder.addNode(this.identifier, this.steps);
   }
 
   handleCoord(coord: Coord) {
-    this.recorder.addStep(this.id, coord);
+    this.steps.push({ coord, time: this.audioContext.currentTime });
     this.inner.handleCoord(coord, this.audioContext.currentTime);
   }
 
@@ -32,7 +33,7 @@ export default class ThereminRecorderNode<
   }
 
   disconnect() {
-    this.recorder.stopRecordingId(this.id);
+    this.recorder.stopNode(this.identifier);
     this.inner.disconnect();
   }
 
@@ -41,7 +42,15 @@ export default class ThereminRecorderNode<
   }
 
   stop() {
-    this.recorder.stopRecordingId(this.id);
+    this.recorder.stopNode(this.identifier);
     this.inner.stop(this.audioContext.currentTime);
+  }
+
+  clone(audioContext: BaseAudioContext) {
+    return new ThereminRecorderNode(
+      audioContext,
+      this.recorder,
+      this.identifier.make
+    );
   }
 }

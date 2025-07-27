@@ -8,19 +8,21 @@ import {
 import ThereminNode, { Coord } from "./theremin_node";
 
 export default class ToneThereminNode extends ThereminNode {
+  private oscillatorType: OscillatorType;
   private oscillatorNode: OscillatorNode;
   private gainNode: GainNode;
 
   constructor(audioContext: BaseAudioContext, oscillatorType: OscillatorType) {
     super(audioContext);
     this.oscillatorNode = audioContext.createOscillator();
-    this.oscillatorNode.type = oscillatorType;
+    this.oscillatorType = oscillatorType;
+    this.oscillatorNode.type = this.oscillatorType;
     this.gainNode = audioContext.createGain();
     this.oscillatorNode.connect(this.gainNode);
   }
 
   handleCoord({ x, y, height }: Coord, time: number) {
-    this.oscillatorNode.frequency.setValueAtTime(x, time);
+    this.oscillatorNode.frequency.setValueAtTime(x * 2, time);
     this.gainNode.gain.setValueAtTime((height - y) / height, time);
   }
 
@@ -38,5 +40,9 @@ export default class ToneThereminNode extends ThereminNode {
 
   stop(time: number) {
     this.oscillatorNode.stop(time);
+  }
+
+  clone(audioContext: BaseAudioContext) {
+    return new ToneThereminNode(audioContext, this.oscillatorType);
   }
 }

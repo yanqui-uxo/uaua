@@ -12,6 +12,7 @@ export default abstract class ThereminNode {
   abstract handleCoord(coord: Coord, time: number): void;
   abstract connect(destination: AudioDestinationNode): void;
   abstract disconnect(): void;
-  abstract start(time: number): void;
+  abstract start(when: number, offset?: number): void;
   abstract stop(time: number): void;
+  abstract clone(audioContext: BaseAudioContext): ThereminNode;
 }

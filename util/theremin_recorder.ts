@@ -1,31 +1,20 @@
 import {
   AudioBuffer,
   AudioContext,
-  BaseAudioContext,
   OfflineAudioContext,
 } from "react-native-audio-api";
-import RecordingIdentifier from "./recording_identifier";
-import ThereminNode, { Coord } from "./theremin_node";
+import { Coord } from "./theremin_node";
+import ThereminNodeIdentifier from "./theremin_node_identifier";
 
-export type RecordingStep = { coord: Coord; time: number };
-export type Recording = { steps: RecordingStep[]; stopTime: number };
+export type Step = { coord: Coord; time: number };
+export type Recording = { steps: Step[]; stopTime: number };
 
-export type ThereminNodeConstructor<Params extends unknown[]> = new (
-  audioContext: BaseAudioContext,
-  ...args: Params
-) => ThereminNode;
-
-export default class ThereminRecorder<NodeParams extends unknown[]> {
+export default class ThereminRecorder {
   private audioContext: AudioContext;
-  private nodeConstructor: ThereminNodeConstructor<NodeParams>;
 
   private recordingStartTime: number | null = null;
-  private recordingSteps: Map<
-    RecordingIdentifier<NodeParams>,
-    RecordingStep[]
-  > = new Map();
-  private recordings: Map<RecordingIdentifier<NodeParams>, Recording> =
-    new Map();
+  private steps: Map<ThereminNodeIdentifier, Step[]> = new Map();
+  private recordings: Map<ThereminNodeIdentifier, Recording> = new Map();
 
   private get currentRecordingTime(): number | null {
     if (this.recordingStartTime === null) {
@@ -35,42 +24,33 @@ export default class ThereminRecorder<NodeParams extends unknown[]> {
     return this.audioContext.currentTime - this.recordingStartTime;
   }
 
-  constructor(
-    audioContext: AudioContext,
-    nodeConstructor: ThereminNodeConstructor<NodeParams>
-  ) {
+  constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
-    this.nodeConstructor = nodeConstructor;
   }
 
-  addStep(id: RecordingIdentifier<NodeParams>, coord: Coord) {
-    if (this.recordingStartTime === null) {
-      return;
-    }
-
-    if (!this.recordingSteps.has(id)) {
-      this.recordingSteps.set(id, []);
-    }
-    const steps = this.recordingSteps.get(id)!;
-
-    steps.push({
-      coord,
-      time: this.currentRecordingTime!,
-    });
+  addNode(id: ThereminNodeIdentifier, steps: Step[]) {
+    this.steps.set(id, steps);
   }
 
-  stopRecordingId(id: RecordingIdentifier<NodeParams>) {
+  stopNode(id: ThereminNodeIdentifier) {
     if (!this.currentRecordingTime) {
+      this.steps.delete(id);
       return;
     }
 
-    const steps = this.recordingSteps.get(id);
+    const steps = this.steps.get(id);
     if (!steps) {
       return;
     }
-    this.recordingSteps.delete(id);
+    this.steps.delete(id);
 
-    this.recordings.set(id, { steps, stopTime: this.currentRecordingTime });
+    this.recordings.set(id, {
+      steps: steps.map((s) => ({
+        coord: s.coord,
+        time: s.time - this.recordingStartTime!,
+      })),
+      stopTime: this.currentRecordingTime,
+    });
   }
 
   startRecording() {
@@ -88,19 +68,21 @@ export default class ThereminRecorder<NodeParams extends unknown[]> {
       sampleRate,
     });
 
-    for (const [id, recording] of this.recordings.entries()) {
-      const node = new this.nodeConstructor(
-        offlineAudioContext,
-        ...id.nodeParams
-      );
+    for (const [template, recording] of this.recordings.entries()) {
+      const node = template.make(offlineAudioContext);
 
-      console.log(recording);
+      const startTime = recording.steps[0].time;
 
-      for (const step of recording.steps) {
-        node.handleCoord(step.coord, step.time);
+      if (startTime < 0) {
+        node.start(0, -startTime);
+      } else {
+        node.start(startTime);
       }
 
-      node.start(recording.steps[0].time);
+      for (const { coord, time } of recording.steps) {
+        node.handleCoord(coord, time);
+      }
+
       node.stop(recording.stopTime);
       node.connect(offlineAudioContext.destination);
     }

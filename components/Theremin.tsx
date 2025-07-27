@@ -1,39 +1,33 @@
+import { ThereminNodeMaker } from "@/util/theremin_node_identifier";
+import ThereminRecorder from "@/util/theremin_recorder";
+import ThereminRecorderNode from "@/util/theremin_recorder_node";
+import { Canvas, Circle } from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
+import { StyleSheet } from "react-native";
+import { AudioContext } from "react-native-audio-api";
 import {
   Gesture,
   GestureDetector,
   GestureTouchEvent,
   TouchData,
 } from "react-native-gesture-handler";
-import { AudioContext } from "react-native-audio-api";
-import { StyleSheet } from "react-native";
-import { Canvas, Circle } from "@shopify/react-native-skia";
-import ThereminRecorder, {
-  ThereminNodeConstructor,
-} from "@/util/theremin_recorder";
-import ThereminRecorderNode from "@/util/theremin_recorder_node";
 
 // TODO: fix node being held on six-finger tap on iOS
-export default function Theremin<NodeParams extends unknown[]>({
+export default function Theremin({
   audioContext,
-  nodeConstructor,
   recorder,
-  params,
+  nodeMaker,
 }: {
   audioContext: AudioContext;
-  recorder: ThereminRecorder<NodeParams>;
-  nodeConstructor: ThereminNodeConstructor<NodeParams>;
-  params: NodeParams;
+  recorder: ThereminRecorder;
+  nodeMaker: ThereminNodeMaker;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
   const widthRef = useRef<number | null>(null);
   const heightRef = useRef<number | null>(null);
-  const nodesRef = useRef<Map<number, ThereminRecorderNode<NodeParams>>>(
-    new Map()
-  );
+  const nodesRef = useRef<Map<number, ThereminRecorderNode>>(new Map());
 
   function onTouchRemove(e: GestureTouchEvent) {
-    console.log("remove", e.changedTouches);
     const changedIds = e.changedTouches.map((t) => t.id);
 
     // for some reason allTouches can contain a touch that was just removed
@@ -63,8 +57,7 @@ export default function Theremin<NodeParams extends unknown[]>({
         const node = new ThereminRecorderNode(
           audioContext,
           recorder,
-          nodeConstructor,
-          ...params
+          nodeMaker
         );
         nodesRef.current.set(t.id, node);
         node.handleCoord({
