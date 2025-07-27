@@ -16,11 +16,11 @@ import {
 export default function Theremin({
   audioContext,
   recorder,
-  nodeMaker,
+  makeNode,
 }: {
   audioContext: AudioContext;
   recorder: ThereminRecorder;
-  nodeMaker: ThereminNodeMaker;
+  makeNode: ThereminNodeMaker;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
   const widthRef = useRef<number | null>(null);
@@ -54,11 +54,7 @@ export default function Theremin({
           oldNode.disconnect();
         }
 
-        const node = new ThereminRecorderNode(
-          audioContext,
-          recorder,
-          nodeMaker
-        );
+        const node = new ThereminRecorderNode(audioContext, recorder, makeNode);
         nodesRef.current.set(t.id, node);
         node.handleCoord({
           x: t.x,

@@ -14,12 +14,12 @@ export default class ThereminRecorderNode extends ThereminNode {
   constructor(
     audioContext: BaseAudioContext,
     recorder: ThereminRecorder,
-    nodeMaker: ThereminNodeMaker
+    makeNode: ThereminNodeMaker
   ) {
     super(audioContext);
     this.recorder = recorder;
-    this.inner = nodeMaker(audioContext);
-    this.identifier = new ThereminNodeIdentifier(nodeMaker);
+    this.inner = makeNode(audioContext);
+    this.identifier = new ThereminNodeIdentifier(makeNode);
     this.recorder.addNode(this.identifier, this.steps);
   }
 

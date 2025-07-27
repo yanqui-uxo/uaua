@@ -23,7 +23,7 @@ export default function Index() {
         <Theremin
           audioContext={audioContext}
           recorder={recorder}
-          nodeMaker={(ac) => new ToneThereminNode(ac, oscillatorType)}
+          makeNode={(ac) => new ToneThereminNode(ac, oscillatorType)}
         />
         <RecordButtons audioContext={audioContext} recorder={recorder} />
       </SafeAreaView>
