@@ -1,18 +1,19 @@
 import OscillatorTypeSelector from "@/components/OscillatorTypeSelector";
-import RecordButtons from "@/components/RecordButtons";
+import RecordButton from "@/components/RecordButton";
 import Theremin from "@/components/Theremin";
-import ThereminRecorder from "@/util/theremin_recorder";
-import ToneThereminNode from "@/util/tone_theremin_node";
-import { useState } from "react";
+import { audioContext, RecordingsContext } from "@/context";
+import ThereminRecorder from "@/theremin/theremin_recorder";
+import ToneThereminNode from "@/theremin/tone_theremin_node";
+import { use, useState } from "react";
 import { SafeAreaView } from "react-native";
-import { AudioContext, OscillatorType } from "react-native-audio-api";
+import { OscillatorType } from "react-native-audio-api";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-const audioContext = new AudioContext();
 const recorder = new ThereminRecorder(audioContext);
 
 export default function Index() {
   const [oscillatorType, setOscillatorType] = useState<OscillatorType>("sine");
+  const { recordings, setRecordings } = use(RecordingsContext);
   return (
     <GestureHandlerRootView>
       <SafeAreaView style={{ flex: 1 }}>
@@ -21,11 +22,14 @@ export default function Index() {
           onSelect={setOscillatorType}
         />
         <Theremin
-          audioContext={audioContext}
           recorder={recorder}
           makeNode={(ac) => new ToneThereminNode(ac, oscillatorType)}
         />
-        <RecordButtons audioContext={audioContext} recorder={recorder} />
+        <RecordButton
+          audioContext={audioContext}
+          recorder={recorder}
+          onRecord={(r) => setRecordings([...recordings, r])}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

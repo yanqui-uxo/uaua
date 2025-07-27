@@ -1,10 +1,10 @@
-import { ThereminNodeMaker } from "@/util/theremin_node_identifier";
-import ThereminRecorder from "@/util/theremin_recorder";
-import ThereminRecorderNode from "@/util/theremin_recorder_node";
+import { audioContext } from "@/context";
+import { ThereminNodeMaker } from "@/theremin/theremin_node_identifier";
+import ThereminRecorder from "@/theremin/theremin_recorder";
+import ThereminRecorderNode from "@/theremin/theremin_recorder_node";
 import { Canvas, Circle } from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
 import { StyleSheet } from "react-native";
-import { AudioContext } from "react-native-audio-api";
 import {
   Gesture,
   GestureDetector,
@@ -14,11 +14,9 @@ import {
 
 // TODO: fix node being held on six-finger tap on iOS
 export default function Theremin({
-  audioContext,
   recorder,
   makeNode,
 }: {
-  audioContext: AudioContext;
   recorder: ThereminRecorder;
   makeNode: ThereminNodeMaker;
 }) {
