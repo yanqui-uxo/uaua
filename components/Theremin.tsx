@@ -1,4 +1,4 @@
-import { audioContext } from "@/context";
+import { audioContext } from "@/global";
 import { ThereminNodeMaker } from "@/theremin/theremin_node_identifier";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import ThereminRecorderNode from "@/theremin/theremin_recorder_node";

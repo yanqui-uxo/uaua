@@ -4,6 +4,7 @@ import ThereminNode from "./theremin_node";
 export type ThereminNodeMaker = (
   audioContext: BaseAudioContext
 ) => ThereminNode;
+
 export default class ThereminNodeIdentifier {
   private _make: ThereminNodeMaker;
 

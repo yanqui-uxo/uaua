@@ -42,7 +42,7 @@ export default class ToneThereminNode extends ThereminNode {
     this.oscillatorNode.stop(time);
   }
 
-  clone(audioContext: BaseAudioContext) {
+  clone(audioContext: BaseAudioContext): ToneThereminNode {
     return new ToneThereminNode(audioContext, this.oscillatorType);
   }
 }

@@ -6,15 +6,21 @@ import {
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
-export type Step = { coord: Coord; time: number };
-export type Recording = { steps: Step[]; stopTime: number };
+type Step = { coord: Coord; time: number };
+type UnrenderedRecording = { steps: Step[]; stopTime: number };
+export type Recording = {
+  buffer: AudioBuffer;
+  name?: string;
+  timestamp: number;
+};
 
 export default class ThereminRecorder {
   private audioContext: AudioContext;
 
   private recordingStartTime: number | null = null;
   private steps: Map<ThereminNodeIdentifier, Step[]> = new Map();
-  private recordings: Map<ThereminNodeIdentifier, Recording> = new Map();
+  private recordings: Map<ThereminNodeIdentifier, UnrenderedRecording> =
+    new Map();
 
   private get currentRecordingTime(): number | null {
     if (this.recordingStartTime === null) {
@@ -57,7 +63,7 @@ export default class ThereminRecorder {
     this.recordingStartTime = this.audioContext.currentTime;
   }
 
-  stopRecording(): Promise<AudioBuffer> {
+  async stopRecording(): Promise<Recording> {
     if (this.currentRecordingTime === null) {
       throw new Error("Cannot stop recording that has not been started");
     }
@@ -68,15 +74,15 @@ export default class ThereminRecorder {
       sampleRate,
     });
 
-    for (const [template, recording] of this.recordings.entries()) {
-      const node = template.make(offlineAudioContext);
+    for (const [id, recording] of this.recordings.entries()) {
+      const node = id.make(offlineAudioContext);
 
       const startTime = recording.steps[0].time;
 
-      if (startTime < 0) {
-        node.start(0, -startTime);
-      } else {
+      if (startTime >= 0) {
         node.start(startTime);
+      } else {
+        node.start(0, -startTime);
       }
 
       for (const { coord, time } of recording.steps) {
@@ -90,6 +96,8 @@ export default class ThereminRecorder {
     this.recordingStartTime = null;
     this.recordings = new Map();
 
-    return offlineAudioContext.startRendering();
+    const buffer = await offlineAudioContext.startRendering();
+
+    return { buffer, timestamp: Date.now() };
   }
 }

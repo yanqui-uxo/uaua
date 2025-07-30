@@ -1,16 +1,13 @@
-import ThereminRecorder from "@/theremin/theremin_recorder";
+import ThereminRecorder, { Recording } from "@/theremin/theremin_recorder";
 import { useState } from "react";
 import { Button } from "react-native";
-import { AudioBuffer, AudioContext } from "react-native-audio-api";
 
 export default function RecordButton({
-  audioContext,
   recorder,
   onRecord,
 }: {
-  audioContext: AudioContext;
   recorder: ThereminRecorder;
-  onRecord: (buf: AudioBuffer) => void;
+  onRecord: (buf: Recording) => void;
 }) {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   return (
