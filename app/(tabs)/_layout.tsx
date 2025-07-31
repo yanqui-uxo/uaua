@@ -4,7 +4,7 @@ export default function Layout() {
   return (
     <Tabs>
       <Tabs.Screen name="index" options={{ title: "Main" }} />
-      <Tabs.Screen name="recordings" options={{ title: "Recordings" }} />
+      <Tabs.Screen name="sources" options={{ title: "Sources" }} />
     </Tabs>
   );
 }

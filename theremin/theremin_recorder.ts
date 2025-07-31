@@ -7,20 +7,14 @@ import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
 type Step = { coord: Coord; time: number };
-type UnrenderedRecording = { steps: Step[]; stopTime: number };
-export type Recording = {
-  buffer: AudioBuffer;
-  name?: string;
-  timestamp: number;
-};
+type Recording = { steps: Step[]; stopTime: number };
 
 export default class ThereminRecorder {
   private audioContext: AudioContext;
 
   private recordingStartTime: number | null = null;
   private steps: Map<ThereminNodeIdentifier, Step[]> = new Map();
-  private recordings: Map<ThereminNodeIdentifier, UnrenderedRecording> =
-    new Map();
+  private recordings: Map<ThereminNodeIdentifier, Recording> = new Map();
 
   private get currentRecordingTime(): number | null {
     if (this.recordingStartTime === null) {
@@ -39,7 +33,7 @@ export default class ThereminRecorder {
   }
 
   stopNode(id: ThereminNodeIdentifier) {
-    if (!this.currentRecordingTime) {
+    if (this.recordingStartTime === null) {
       this.steps.delete(id);
       return;
     }
@@ -55,7 +49,7 @@ export default class ThereminRecorder {
         coord: s.coord,
         time: s.time - this.recordingStartTime!,
       })),
-      stopTime: this.currentRecordingTime,
+      stopTime: this.currentRecordingTime!,
     });
   }
 
@@ -63,10 +57,11 @@ export default class ThereminRecorder {
     this.recordingStartTime = this.audioContext.currentTime;
   }
 
-  async stopRecording(): Promise<Recording> {
+  async stopRecording(): Promise<AudioBuffer> {
     if (this.currentRecordingTime === null) {
       throw new Error("Cannot stop recording that has not been started");
     }
+
     const sampleRate = 44100;
     const offlineAudioContext = new OfflineAudioContext({
       numberOfChannels: 2,
@@ -96,8 +91,6 @@ export default class ThereminRecorder {
     this.recordingStartTime = null;
     this.recordings = new Map();
 
-    const buffer = await offlineAudioContext.startRendering();
-
-    return { buffer, timestamp: Date.now() };
+    return offlineAudioContext.startRendering();
   }
 }

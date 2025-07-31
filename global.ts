@@ -1,26 +1,45 @@
-import { AudioContext } from "react-native-audio-api";
+import { randomUUID } from "expo-crypto";
+import {
+  AudioBuffer,
+  AudioContext,
+  OscillatorType,
+} from "react-native-audio-api";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import { Recording } from "./theremin/theremin_recorder";
 
 export const audioContext = new AudioContext();
 
-type RecordingState = {
-  recordings: Recording[];
-  addRecording: (r: Recording) => void;
-  setName: (index: number, name: string) => void;
+type BaseThereminSource =
+  | { type: "sample"; sample: AudioBuffer }
+  | { type: "oscillator"; oscillatorType: OscillatorType };
+export type ThereminSource = BaseThereminSource & {
+  selected: boolean;
+  name?: string;
+  id: string;
 };
 
-export const useRecordingStore = create<RecordingState>()(
+type ThereminSourceState = {
+  sources: ThereminSource[];
+  addSource: (s: BaseThereminSource) => void;
+  removeSource: (index: number) => void;
+  setIndex: (index: number, source: ThereminSource) => void;
+};
+
+export const useThereminSourceStore = create<ThereminSourceState>()(
   immer((set) => ({
-    recordings: [],
-    addRecording: (r: Recording) =>
+    sources: [],
+    addSource: (s: BaseThereminSource) =>
       set((state) => {
-        state.recordings.push(r);
+        state.sources.push({ ...s, selected: false, id: randomUUID() });
       }),
-    setName: (index: number, name: string) =>
+    removeSource: (index: number) =>
       set((state) => {
-        state.recordings[index].name = name;
+        state.sources.splice(index);
       }),
+    setIndex: (index: number, source: ThereminSource) => {
+      set((state) => {
+        state.sources[index] = source;
+      });
+    },
   }))
 );

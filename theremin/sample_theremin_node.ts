@@ -15,7 +15,9 @@ export default class SampleThereminNode extends ThereminNode {
     this.node.loop = true;
   }
 
+  // TODO: add logic
   handleCoord(coord: Coord) {}
+
   connect(destination: AudioDestinationNode) {
     this.node.connect(destination);
   }

@@ -1,10 +1,10 @@
-import RecordingsView from "@/components/RecordingList";
+import SourceList from "@/components/SourceList";
 import { SafeAreaView } from "react-native";
 
-export default function Recordings() {
+export default function Sources() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <RecordingsView />
+      <SourceList />
     </SafeAreaView>
   );
 }
