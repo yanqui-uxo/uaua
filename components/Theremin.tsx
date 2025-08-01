@@ -12,7 +12,6 @@ import {
   TouchData,
 } from "react-native-gesture-handler";
 
-// TODO: fix node being held on six-finger tap on iOS
 export default function Theremin({
   recorder,
   makeNode,
@@ -29,16 +28,17 @@ export default function Theremin({
     const changedIds = e.changedTouches.map((t) => t.id);
 
     // for some reason allTouches can contain a touch that was just removed
-    const confirmedTouches = e.allTouches.filter(
-      (t) => !changedIds.includes(t.id)
-    );
-    setTouches(confirmedTouches);
+    setTouches(e.allTouches.filter((t) => !changedIds.includes(t.id)));
 
-    const confirmedIds = confirmedTouches.map((t) => t.id);
-    for (const [id, node] of nodesRef.current) {
-      if (!confirmedIds.includes(id)) {
+    for (const id of changedIds) {
+      const node = nodesRef.current.get(id)!;
+      node.disconnect();
+
+      // HACK: compensates for a bug
+      // if a node is connected then disconnected in rapid succession the disconnection fails
+      setTimeout(() => {
         node.disconnect();
-      }
+      }, 100);
     }
   }
 
@@ -47,11 +47,6 @@ export default function Theremin({
       setTouches(e.allTouches);
 
       for (const t of e.changedTouches) {
-        const oldNode = nodesRef.current.get(t.id);
-        if (oldNode) {
-          oldNode.disconnect();
-        }
-
         const node = new ThereminRecorderNode(audioContext, recorder, makeNode);
         nodesRef.current.set(t.id, node);
         node.handleCoord({
@@ -67,16 +62,13 @@ export default function Theremin({
     .onTouchesMove((e) => {
       setTouches(e.allTouches);
 
-      for (const touch of e.changedTouches) {
-        const node = nodesRef.current.get(touch.id);
-        if (node) {
-          node.handleCoord({
-            x: touch.x,
-            y: touch.y,
-            width: widthRef.current!,
-            height: heightRef.current!,
-          });
-        }
+      for (const t of e.changedTouches) {
+        nodesRef.current.get(t.id)!.handleCoord({
+          x: t.x,
+          y: t.y,
+          width: widthRef.current!,
+          height: heightRef.current!,
+        });
       }
     })
     .onTouchesUp(onTouchRemove)
