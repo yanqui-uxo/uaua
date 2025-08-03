@@ -5,7 +5,8 @@ import ThereminNodeIdentifier, {
 } from "./theremin_node_identifier";
 import ThereminRecorder, { Step } from "./theremin_recorder";
 
-export default class ThereminRecorderNode extends ThereminNode {
+export default class ThereminRecorderNode implements ThereminNode {
+  private audioContext: BaseAudioContext;
   private inner: ThereminNode;
   private recorder: ThereminRecorder;
   private identifier: ThereminNodeIdentifier;
@@ -16,7 +17,7 @@ export default class ThereminRecorderNode extends ThereminNode {
     recorder: ThereminRecorder,
     makeNode: ThereminNodeMaker
   ) {
-    super(audioContext);
+    this.audioContext = audioContext;
     this.recorder = recorder;
     this.inner = makeNode(audioContext);
     this.identifier = new ThereminNodeIdentifier(makeNode);

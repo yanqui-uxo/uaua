@@ -3,34 +3,42 @@ import {
   AudioBufferSourceNode,
   AudioDestinationNode,
   BaseAudioContext,
+  GainNode,
 } from "react-native-audio-api";
 import ThereminNode, { Coord } from "./theremin_node";
 
-export default class SampleThereminNode extends ThereminNode {
-  private node: AudioBufferSourceNode;
+export default class SampleThereminNode implements ThereminNode {
+  private audioContext: BaseAudioContext;
+  private bufferNode: AudioBufferSourceNode;
+  private gainNode: GainNode;
+
   constructor(audioContext: BaseAudioContext, sample: AudioBuffer) {
-    super(audioContext);
-    this.node = audioContext.createBufferSource();
-    this.node.buffer = sample;
-    this.node.loop = true;
+    this.audioContext = audioContext;
+    this.bufferNode = audioContext.createBufferSource();
+    this.bufferNode.buffer = sample;
+    this.bufferNode.loop = true;
+    this.gainNode = audioContext.createGain();
+    this.bufferNode.connect(this.gainNode);
   }
 
   // TODO: add logic
-  handleCoord(coord: Coord) {}
+  handleCoord({ x, width }: Coord, time: number) {
+    this.bufferNode.detune.setValueAtTime((x - width / 2) * 300, time);
+  }
 
   connect(destination: AudioDestinationNode) {
-    this.node.connect(destination);
+    this.gainNode.connect(destination);
   }
   disconnect() {
-    this.node.disconnect();
+    this.gainNode.disconnect();
   }
   start(when: number, offset?: number) {
-    this.node.start(when, offset);
+    this.bufferNode.start(when, offset);
   }
   stop(time: number) {
-    this.node.stop(time);
+    this.bufferNode.stop(time);
   }
   clone(audioContext: BaseAudioContext): SampleThereminNode {
-    return new SampleThereminNode(audioContext, this.node.buffer!);
+    return new SampleThereminNode(audioContext, this.bufferNode.buffer!);
   }
 }

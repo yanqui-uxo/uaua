@@ -7,13 +7,14 @@ import {
 } from "react-native-audio-api";
 import ThereminNode, { Coord } from "./theremin_node";
 
-export default class ToneThereminNode extends ThereminNode {
+export default class ToneThereminNode implements ThereminNode {
+  private audioContext: BaseAudioContext;
   private oscillatorType: OscillatorType;
   private oscillatorNode: OscillatorNode;
   private gainNode: GainNode;
 
   constructor(audioContext: BaseAudioContext, oscillatorType: OscillatorType) {
-    super(audioContext);
+    this.audioContext = audioContext;
     this.oscillatorNode = audioContext.createOscillator();
     this.oscillatorType = oscillatorType;
     this.oscillatorNode.type = this.oscillatorType;

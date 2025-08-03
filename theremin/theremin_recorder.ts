@@ -6,7 +6,7 @@ import {
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
-type Step = { coord: Coord; time: number };
+export type Step = { coord: Coord; time: number };
 type Recording = { steps: Step[]; stopTime: number };
 
 export default class ThereminRecorder {

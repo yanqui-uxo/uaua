@@ -9,10 +9,10 @@ import { immer } from "zustand/middleware/immer";
 
 export const audioContext = new AudioContext();
 
-type BaseThereminSource =
+type ThereminSourceData =
   | { type: "sample"; sample: AudioBuffer }
   | { type: "oscillator"; oscillatorType: OscillatorType };
-export type ThereminSource = BaseThereminSource & {
+export type ThereminSource = ThereminSourceData & {
   selected: boolean;
   name?: string;
   id: string;
@@ -20,7 +20,7 @@ export type ThereminSource = BaseThereminSource & {
 
 type ThereminSourceState = {
   sources: ThereminSource[];
-  addSource: (s: BaseThereminSource) => void;
+  addSource: (s: ThereminSourceData) => void;
   removeSource: (index: number) => void;
   setIndex: (index: number, source: ThereminSource) => void;
 };
@@ -28,7 +28,7 @@ type ThereminSourceState = {
 export const useThereminSourceStore = create<ThereminSourceState>()(
   immer((set) => ({
     sources: [],
-    addSource: (s: BaseThereminSource) =>
+    addSource: (s: ThereminSourceData) =>
       set((state) => {
         state.sources.push({ ...s, selected: false, id: randomUUID() });
       }),
