@@ -1,13 +1,7 @@
 import { randomUUID } from "expo-crypto";
-import {
-  AudioBuffer,
-  AudioContext,
-  OscillatorType,
-} from "react-native-audio-api";
+import { AudioBuffer, OscillatorType } from "react-native-audio-api";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-
-export const audioContext = new AudioContext();
 
 type ThereminSourceData =
   | { type: "sample"; sample: AudioBuffer }

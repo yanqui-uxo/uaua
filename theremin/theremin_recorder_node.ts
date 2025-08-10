@@ -3,14 +3,13 @@ import ThereminNode, { Coord } from "./theremin_node";
 import ThereminNodeIdentifier, {
   ThereminNodeMaker,
 } from "./theremin_node_identifier";
-import ThereminRecorder, { Step } from "./theremin_recorder";
+import ThereminRecorder from "./theremin_recorder";
 
 export default class ThereminRecorderNode implements ThereminNode {
   private audioContext: BaseAudioContext;
   private inner: ThereminNode;
   private recorder: ThereminRecorder;
-  private identifier: ThereminNodeIdentifier;
-  private steps: Step[] = [];
+  private id: ThereminNodeIdentifier;
 
   constructor(
     audioContext: BaseAudioContext,
@@ -20,13 +19,12 @@ export default class ThereminRecorderNode implements ThereminNode {
     this.audioContext = audioContext;
     this.recorder = recorder;
     this.inner = makeNode(audioContext);
-    this.identifier = new ThereminNodeIdentifier(makeNode);
-    this.recorder.addNode(this.identifier, this.steps);
+    this.id = new ThereminNodeIdentifier(makeNode);
   }
 
-  handleCoord(coord: Coord) {
-    this.steps.push({ coord, time: this.audioContext.currentTime });
-    this.inner.handleCoord(coord, this.audioContext.currentTime);
+  handleCoord(coord: Coord, contextTime: number) {
+    this.recorder.addStep(this.id, coord);
+    this.inner.handleCoord(coord, contextTime);
   }
 
   connect(destination: AudioDestinationNode) {
@@ -34,7 +32,7 @@ export default class ThereminRecorderNode implements ThereminNode {
   }
 
   disconnect() {
-    this.recorder.stopNode(this.identifier);
+    this.recorder.stopNode(this.id);
     this.inner.disconnect();
   }
 
@@ -43,15 +41,11 @@ export default class ThereminRecorderNode implements ThereminNode {
   }
 
   stop() {
-    this.recorder.stopNode(this.identifier);
+    this.recorder.stopNode(this.id);
     this.inner.stop(this.audioContext.currentTime);
   }
 
   clone(audioContext: BaseAudioContext) {
-    return new ThereminRecorderNode(
-      audioContext,
-      this.recorder,
-      this.identifier.make
-    );
+    return new ThereminRecorderNode(audioContext, this.recorder, this.id.make);
   }
 }

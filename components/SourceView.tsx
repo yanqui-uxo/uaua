@@ -1,6 +1,7 @@
-import { audioContext, ThereminSource } from "@/global";
+import { ThereminSource } from "@/global";
 import { ReactElement } from "react";
 import { Button, Switch, Text, TextInput, View } from "react-native";
+import { AudioContext } from "react-native-audio-api";
 export default function SourceView({
   source,
   onChange,
@@ -15,6 +16,7 @@ export default function SourceView({
           <Button
             title="Play"
             onPress={() => {
+              const audioContext = new AudioContext();
               const node = audioContext.createBufferSource();
               node.buffer = source.sample;
               node.connect(audioContext.destination);
