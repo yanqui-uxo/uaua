@@ -8,12 +8,10 @@ import {
 import ThereminNode, { Coord } from "./theremin_node";
 
 export default class SampleThereminNode implements ThereminNode {
-  private audioContext: BaseAudioContext;
   private bufferNode: AudioBufferSourceNode;
   private gainNode: GainNode;
 
   constructor(audioContext: BaseAudioContext, sample: AudioBuffer) {
-    this.audioContext = audioContext;
     this.bufferNode = audioContext.createBufferSource();
     this.bufferNode.buffer = sample;
     this.bufferNode.loop = true;
@@ -21,9 +19,8 @@ export default class SampleThereminNode implements ThereminNode {
     this.bufferNode.connect(this.gainNode);
   }
 
-  // TODO: add logic
   handleCoord({ x, width }: Coord, time: number) {
-    this.bufferNode.detune.setValueAtTime((x - width / 2) * 300, time);
+    this.bufferNode.detune.setValueAtTime((x - width / 2) * 5, time);
   }
 
   connect(destination: AudioDestinationNode) {

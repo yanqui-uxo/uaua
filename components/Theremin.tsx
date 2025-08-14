@@ -3,7 +3,6 @@ import ThereminRecorder from "@/theremin/theremin_recorder";
 import ThereminRecorderNode from "@/theremin/theremin_recorder_node";
 import { Canvas, Circle } from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
-import { StyleSheet } from "react-native";
 import { AudioContext } from "react-native-audio-api";
 import {
   Gesture,
@@ -15,9 +14,11 @@ import {
 export default function Theremin({
   recorder,
   makeNode,
+  backgroundColor,
 }: {
   recorder: ThereminRecorder;
   makeNode: ThereminNodeMaker;
+  backgroundColor: string;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
   const widthRef = useRef<number | null>(null);
@@ -37,12 +38,6 @@ export default function Theremin({
     for (const id of changedIds) {
       const node = nodesRef.current.get(id)!;
       node.disconnect();
-
-      // HACK: compensates for a bug
-      // if a node is connected then disconnected in rapid succession the disconnection fails
-      setTimeout(() => {
-        node.disconnect();
-      }, 100);
     }
 
     if (confirmedTouches.length === 0) {
@@ -66,17 +61,16 @@ export default function Theremin({
           makeNode
         );
         nodesRef.current.set(t.id, node);
-        setTimeout(() => {
-          node.handleCoord(
-            {
-              x: t.x,
-              y: t.y,
-              width: widthRef.current!,
-              height: heightRef.current!,
-            },
-            audioContextRef.current!.currentTime
-          );
-        }, 1);
+        // handleCoord does nothing if given 0 as the time
+        node.handleCoord(
+          {
+            x: t.x,
+            y: t.y,
+            width: widthRef.current!,
+            height: heightRef.current!,
+          },
+          Number.MIN_VALUE
+        );
         node.connect(audioContextRef.current.destination);
         node.start();
       }
@@ -104,7 +98,7 @@ export default function Theremin({
   return (
     <GestureDetector gesture={gesture}>
       <Canvas
-        style={styles.canvas}
+        style={{ flex: 1, backgroundColor }}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
           widthRef.current = width;
@@ -118,10 +112,3 @@ export default function Theremin({
     </GestureDetector>
   );
 }
-
-const styles = StyleSheet.create({
-  canvas: {
-    flex: 1,
-    backgroundColor: "skyblue",
-  },
-});
