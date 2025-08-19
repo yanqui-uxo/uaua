@@ -1,5 +1,5 @@
 import { useThereminSourceStore } from "@/global";
-import { Button, View } from "react-native";
+import { Button, FlatList } from "react-native";
 import { OscillatorType } from "react-native-audio-api";
 import SourceView from "./SourceView";
 
@@ -16,17 +16,19 @@ export default function SourceList() {
 
   return (
     <>
-      <View style={{ flex: 1 }}>
-        {sources.map((s, i) => (
+      <FlatList
+        style={{ flex: 1 }}
+        data={sources}
+        renderItem={({ item, index }) => (
           <SourceView
-            source={s}
+            source={item}
             onChange={(s) => {
-              setIndex(i, s);
+              setIndex(index, s);
             }}
-            key={s.id}
           />
-        ))}
-      </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
       {oscillatorTypes.map((ot) => (
         <Button
           title={`New ${ot}`}

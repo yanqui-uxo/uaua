@@ -14,7 +14,15 @@ function thereminSourceToNodeMaker(source: ThereminSource): ThereminNodeMaker {
   }
 }
 
-const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"];
+const colors = [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "indigo",
+  "violet",
+] as const;
 
 export default function ThereminCollection({
   recorder,
@@ -22,12 +30,14 @@ export default function ThereminCollection({
   recorder: ThereminRecorder;
 }) {
   const sources = useThereminSourceStore((state) => state.sources);
-  return sources.map((s, i) => (
-    <Theremin
-      recorder={recorder}
-      makeNode={thereminSourceToNodeMaker(s)}
-      key={s.id}
-      backgroundColor={colors[i % colors.length]}
-    />
-  ));
+  return sources
+    .filter((s) => s.selected)
+    .map((s, i) => (
+      <Theremin
+        recorder={recorder}
+        makeNode={thereminSourceToNodeMaker(s)}
+        key={s.id}
+        backgroundColor={colors[i % colors.length]}
+      />
+    ));
 }

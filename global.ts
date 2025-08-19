@@ -24,7 +24,7 @@ export const useThereminSourceStore = create<ThereminSourceState>()(
     sources: [],
     addSource: (s: ThereminSourceData) =>
       set((state) => {
-        state.sources.push({ ...s, selected: false, id: randomUUID() });
+        state.sources.push({ ...s, selected: true, id: randomUUID() });
       }),
     removeSource: (index: number) =>
       set((state) => {
