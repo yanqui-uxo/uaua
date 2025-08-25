@@ -1,4 +1,4 @@
-import { AudioDestinationNode, BaseAudioContext } from "react-native-audio-api";
+import { AudioDestinationNode } from "react-native-audio-api";
 
 export type Coord = { x: number; y: number; width: number; height: number };
 
@@ -8,5 +8,4 @@ export default interface ThereminNode {
   disconnect(): void;
   start(contextTime: number, offset?: number): void;
   stop(contextTime: number): void;
-  clone(audioContext: BaseAudioContext): ThereminNode;
 }

@@ -44,8 +44,4 @@ export default class ThereminRecorderNode implements ThereminNode {
     this.recorder.stopNode(this.id);
     this.inner.stop(this.audioContext.currentTime);
   }
-
-  clone(audioContext: BaseAudioContext) {
-    return new ThereminRecorderNode(audioContext, this.recorder, this.id.make);
-  }
 }

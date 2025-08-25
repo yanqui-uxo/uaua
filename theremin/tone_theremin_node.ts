@@ -40,8 +40,4 @@ export default class ToneThereminNode implements ThereminNode {
   stop(contextTime: number) {
     this.oscillatorNode.stop(contextTime);
   }
-
-  clone(audioContext: BaseAudioContext): ToneThereminNode {
-    return new ToneThereminNode(audioContext, this.oscillatorType);
-  }
 }

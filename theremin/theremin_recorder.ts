@@ -44,18 +44,20 @@ export default class ThereminRecorder {
       throw new Error("Cannot stop recording that has not been started");
     }
 
+    const absoluteToContextTime = (time: number) =>
+      (time - this.recordingStartTime!) / 1000;
+
     const sampleRate = 44100;
     const offlineAudioContext = new OfflineAudioContext({
       numberOfChannels: 2,
-      length: ((Date.now() - this.recordingStartTime) / 1000) * sampleRate,
+      length: absoluteToContextTime(Date.now()) * sampleRate,
       sampleRate,
     });
 
     for (const [id, recording] of this.recordings.entries()) {
       const node = id.make(offlineAudioContext);
 
-      const startContextTime =
-        (recording.steps[0].time - this.recordingStartTime) / 1000;
+      const startContextTime = absoluteToContextTime(recording.steps[0].time);
       if (startContextTime >= 0) {
         node.start(startContextTime);
       } else {
@@ -63,10 +65,10 @@ export default class ThereminRecorder {
       }
 
       for (const { coord, time } of recording.steps) {
-        node.handleCoord(coord, (time - this.recordingStartTime) / 1000);
+        node.handleCoord(coord, absoluteToContextTime(time));
       }
 
-      node.stop((recording.stopTime - this.recordingStartTime) / 1000);
+      node.stop(absoluteToContextTime(recording.stopTime));
       node.connect(offlineAudioContext.destination);
     }
 

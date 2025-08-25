@@ -36,7 +36,4 @@ export default class SampleThereminNode implements ThereminNode {
   stop(contextTime: number) {
     this.bufferNode.stop(contextTime);
   }
-  clone(audioContext: BaseAudioContext): SampleThereminNode {
-    return new SampleThereminNode(audioContext, this.bufferNode.buffer!);
-  }
 }
