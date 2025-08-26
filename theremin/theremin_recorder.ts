@@ -2,11 +2,12 @@ import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
-export type Step = { coord: Coord; time: number };
-type Recording = { steps: Step[]; stopTime: number };
+// absolute time is current unix timestamp in ms
+export type Step = { coord: Coord; absoluteTime: number };
+type Recording = { steps: Step[]; absoluteStopTime: number };
 
 export default class ThereminRecorder {
-  private recordingStartTime: number | null = null;
+  private absoluteRecordingStartTime: number | null = null;
   private steps: Map<ThereminNodeIdentifier, Step[]> = new Map();
   private recordings: Map<ThereminNodeIdentifier, Recording> = new Map();
 
@@ -14,11 +15,17 @@ export default class ThereminRecorder {
     if (!this.steps.has(id)) {
       this.steps.set(id, []);
     }
-    this.steps.get(id)!.push({ coord, time: Date.now() });
+
+    const step: Step = { coord, absoluteTime: Date.now() };
+    if (this.absoluteRecordingStartTime) {
+      this.steps.get(id)!.push(step);
+    } else {
+      this.steps.set(id, [step]);
+    }
   }
 
   stopNode(id: ThereminNodeIdentifier) {
-    if (this.recordingStartTime === null) {
+    if (this.absoluteRecordingStartTime === null) {
       this.steps.delete(id);
       return;
     }
@@ -31,21 +38,25 @@ export default class ThereminRecorder {
 
     this.recordings.set(id, {
       steps,
-      stopTime: Date.now(),
+      absoluteStopTime: Date.now(),
     });
   }
 
   startRecording() {
-    this.recordingStartTime = Date.now();
+    this.absoluteRecordingStartTime = Date.now();
   }
 
   async stopRecording(): Promise<AudioBuffer> {
-    if (this.recordingStartTime === null) {
+    if (this.absoluteRecordingStartTime === null) {
       throw new Error("Cannot stop recording that has not been started");
     }
 
+    for (const id of this.steps.keys()) {
+      this.stopNode(id);
+    }
+
     const absoluteToContextTime = (time: number) =>
-      (time - this.recordingStartTime!) / 1000;
+      (time - this.absoluteRecordingStartTime!) / 1000;
 
     const sampleRate = 44100;
     const offlineAudioContext = new OfflineAudioContext({
@@ -57,22 +68,27 @@ export default class ThereminRecorder {
     for (const [id, recording] of this.recordings.entries()) {
       const node = id.make(offlineAudioContext);
 
-      const startContextTime = absoluteToContextTime(recording.steps[0].time);
+      const startContextTime = absoluteToContextTime(
+        recording.steps[0].absoluteTime
+      );
       if (startContextTime >= 0) {
         node.start(startContextTime);
       } else {
-        node.start(0, -startContextTime);
+        node.start(Number.MIN_VALUE, -startContextTime);
       }
 
-      for (const { coord, time } of recording.steps) {
-        node.handleCoord(coord, absoluteToContextTime(time));
+      for (const { coord, absoluteTime } of recording.steps) {
+        node.handleCoord(
+          coord,
+          Math.max(absoluteToContextTime(absoluteTime), Number.MIN_VALUE)
+        );
       }
 
-      node.stop(absoluteToContextTime(recording.stopTime));
+      node.stop(absoluteToContextTime(recording.absoluteStopTime));
       node.connect(offlineAudioContext.destination);
     }
 
-    this.recordingStartTime = null;
+    this.absoluteRecordingStartTime = null;
     this.recordings = new Map();
 
     return offlineAudioContext.startRendering();

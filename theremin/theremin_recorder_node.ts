@@ -22,9 +22,9 @@ export default class ThereminRecorderNode implements ThereminNode {
     this.id = new ThereminNodeIdentifier(makeNode);
   }
 
-  handleCoord(coord: Coord, contextTime: number) {
+  handleCoord(coord: Coord, time: number) {
     this.recorder.addStep(this.id, coord);
-    this.inner.handleCoord(coord, contextTime);
+    this.inner.handleCoord(coord, time);
   }
 
   connect(destination: AudioDestinationNode) {

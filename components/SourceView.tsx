@@ -19,6 +19,9 @@ export default function SourceView({
               const audioContext = new AudioContext();
               const node = audioContext.createBufferSource();
               node.buffer = source.sample;
+              node.onEnded = () => {
+                audioContext.close();
+              };
               node.connect(audioContext.destination);
               node.start();
             }}
@@ -28,6 +31,7 @@ export default function SourceView({
         return <Text>{source.oscillatorType}</Text>;
     }
   }
+
   return (
     <View style={{ flexDirection: "row" }}>
       <TextInput

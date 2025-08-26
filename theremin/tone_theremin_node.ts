@@ -20,9 +20,9 @@ export default class ToneThereminNode implements ThereminNode {
     this.oscillatorNode.connect(this.gainNode);
   }
 
-  handleCoord({ x, y, height }: Coord, contextTime: number) {
-    this.oscillatorNode.frequency.setValueAtTime(x * 2, contextTime);
-    this.gainNode.gain.setValueAtTime((height - y) / height, contextTime);
+  handleCoord({ x, y, height }: Coord, time: number) {
+    this.oscillatorNode.frequency.setValueAtTime(x * 2, time);
+    this.gainNode.gain.setValueAtTime((height - y) / height, time);
   }
 
   connect(destination: AudioDestinationNode) {
@@ -33,11 +33,11 @@ export default class ToneThereminNode implements ThereminNode {
     this.gainNode.disconnect();
   }
 
-  start(contextTime: number) {
-    this.oscillatorNode.start(contextTime);
+  start(time: number) {
+    this.oscillatorNode.start(time);
   }
 
-  stop(contextTime: number) {
-    this.oscillatorNode.stop(contextTime);
+  stop(time: number) {
+    this.oscillatorNode.stop(time);
   }
 }

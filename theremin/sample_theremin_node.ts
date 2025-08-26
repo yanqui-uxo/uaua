@@ -19,9 +19,9 @@ export default class SampleThereminNode implements ThereminNode {
     this.bufferNode.connect(this.gainNode);
   }
 
-  handleCoord({ x, y, width, height }: Coord, contextTime: number) {
-    this.bufferNode.detune.setValueAtTime((x - width / 2) * 5, contextTime);
-    this.gainNode.gain.setValueAtTime((height - y) / height, contextTime);
+  handleCoord({ x, y, width, height }: Coord, time: number) {
+    this.bufferNode.detune.setValueAtTime((x - width / 2) * 5, time);
+    this.gainNode.gain.setValueAtTime((height - y) / height, time);
   }
 
   connect(destination: AudioDestinationNode) {
@@ -30,10 +30,10 @@ export default class SampleThereminNode implements ThereminNode {
   disconnect() {
     this.gainNode.disconnect();
   }
-  start(contextTime: number, offset?: number) {
-    this.bufferNode.start(contextTime, offset);
+  start(time: number, offset?: number) {
+    this.bufferNode.start(time, offset);
   }
-  stop(contextTime: number) {
-    this.bufferNode.stop(contextTime);
+  stop(time: number) {
+    this.bufferNode.stop(time);
   }
 }
