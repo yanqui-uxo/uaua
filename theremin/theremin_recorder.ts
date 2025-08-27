@@ -3,20 +3,23 @@ import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
 // absolute time is current unix timestamp in ms
-export type Step = { coord: Coord; absoluteTime: number };
-type Recording = { steps: Step[]; absoluteStopTime: number };
+export type ThereminStep = { coord: Coord; absoluteTime: number };
+type ThereminRecording = { steps: ThereminStep[]; absoluteStopTime: number };
+type MicRecording = { buffer: AudioBuffer; absoluteTime: number };
 
 export default class ThereminRecorder {
   private absoluteRecordingStartTime: number | null = null;
-  private steps: Map<ThereminNodeIdentifier, Step[]> = new Map();
-  private recordings: Map<ThereminNodeIdentifier, Recording> = new Map();
+  private steps: Map<ThereminNodeIdentifier, ThereminStep[]> = new Map();
+  private thereminRecordings: Map<ThereminNodeIdentifier, ThereminRecording> =
+    new Map();
+  private micRecordings: MicRecording[] = [];
 
   addStep(id: ThereminNodeIdentifier, coord: Coord) {
     if (!this.steps.has(id)) {
       this.steps.set(id, []);
     }
 
-    const step: Step = { coord, absoluteTime: Date.now() };
+    const step: ThereminStep = { coord, absoluteTime: Date.now() };
     if (this.absoluteRecordingStartTime) {
       this.steps.get(id)!.push(step);
     } else {
@@ -36,10 +39,16 @@ export default class ThereminRecorder {
     }
     this.steps.delete(id);
 
-    this.recordings.set(id, {
+    this.thereminRecordings.set(id, {
       steps,
       absoluteStopTime: Date.now(),
     });
+  }
+
+  addMicRecording(recording: MicRecording) {
+    if (this.absoluteRecordingStartTime) {
+      this.micRecordings.push(recording);
+    }
   }
 
   startRecording() {
@@ -65,13 +74,13 @@ export default class ThereminRecorder {
       sampleRate,
     });
 
-    for (const [id, recording] of this.recordings.entries()) {
+    for (const [id, recording] of this.thereminRecordings.entries()) {
       const node = id.make(offlineAudioContext);
 
       const startContextTime = absoluteToContextTime(
         recording.steps[0].absoluteTime
       );
-      if (startContextTime >= 0) {
+      if (startContextTime > 0) {
         node.start(startContextTime);
       } else {
         node.start(Number.MIN_VALUE, -startContextTime);
@@ -88,8 +97,22 @@ export default class ThereminRecorder {
       node.connect(offlineAudioContext.destination);
     }
 
+    for (const { buffer, absoluteTime } of this.micRecordings) {
+      const time = absoluteToContextTime(absoluteTime);
+
+      const node = offlineAudioContext.createBufferSource();
+      node.buffer = buffer;
+
+      if (time > 0) {
+        node.start(time);
+      } else {
+        node.start(Number.MIN_VALUE, -time);
+      }
+    }
+
     this.absoluteRecordingStartTime = null;
-    this.recordings = new Map();
+    this.thereminRecordings = new Map();
+    this.micRecordings = [];
 
     return offlineAudioContext.startRendering();
   }

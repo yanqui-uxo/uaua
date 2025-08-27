@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "react-native";
 import { AudioBuffer } from "react-native-audio-api";
 
-export default function RecordButton({
+export default function ThereminRecordButton({
   recorder,
   onRecord,
 }: {
