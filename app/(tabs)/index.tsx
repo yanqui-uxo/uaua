@@ -1,9 +1,8 @@
-import MicRecordButton from "@/components/MicRecordButton";
+import MicButton from "@/components/MicRecordButton";
 import ThereminCollection from "@/components/ThereminCollection";
 import ThereminRecordButton from "@/components/ThereminRecordButton";
-import { useThereminSourceStore } from "@/global";
+import { useThereminSourceStore } from "@/global/state";
 import ThereminRecorder from "@/theremin/theremin_recorder";
-import { trimInitialSilence } from "@/util";
 import { SafeAreaView, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -20,10 +19,15 @@ export default function Index() {
         <ThereminRecordButton
           recorder={recorder}
           onRecord={(buf) => {
-            addSource({ type: "sample", sample: trimInitialSilence(buf) });
+            addSource({ type: "sample", sample: buf });
           }}
         />
-        <MicRecordButton recorder={recorder} />
+        <MicButton
+          recorder={recorder}
+          onRecord={(buf) => {
+            addSource({ type: "sample", sample: buf });
+          }}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

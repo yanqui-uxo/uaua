@@ -20,8 +20,8 @@ export default class ToneThereminNode implements ThereminNode {
     this.oscillatorNode.connect(this.gainNode);
   }
 
-  handleCoord({ x, y, height }: Coord, time: number) {
-    this.oscillatorNode.frequency.setValueAtTime(x * 2, time);
+  handleCoord({ x, y, width, height }: Coord, time: number) {
+    this.oscillatorNode.frequency.setValueAtTime((x / width) * 2500, time);
     this.gainNode.gain.setValueAtTime((height - y) / height, time);
   }
 

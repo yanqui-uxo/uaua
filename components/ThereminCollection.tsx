@@ -1,4 +1,4 @@
-import { ThereminSource, useThereminSourceStore } from "@/global";
+import { ThereminSource, useThereminSourceStore } from "@/global/state";
 import SampleThereminNode from "@/theremin/sample_theremin_node";
 import { ThereminNodeMaker } from "@/theremin/theremin_node_identifier";
 import ThereminRecorder from "@/theremin/theremin_recorder";
@@ -7,7 +7,7 @@ import Theremin from "./Theremin";
 
 function thereminSourceToNodeMaker(source: ThereminSource): ThereminNodeMaker {
   switch (source.type) {
-    case "oscillator":
+    case "tone":
       return (ac) => new ToneThereminNode(ac, source.oscillatorType);
     case "sample":
       return (ac) => new SampleThereminNode(ac, source.sample);

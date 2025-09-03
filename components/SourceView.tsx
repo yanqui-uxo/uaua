@@ -1,7 +1,9 @@
-import { ThereminSource } from "@/global";
+import { ThereminSource } from "@/global/state";
 import { ReactElement } from "react";
-import { Button, Switch, Text, TextInput, View } from "react-native";
-import { AudioContext } from "react-native-audio-api";
+import { Switch, View } from "react-native";
+import SampleView from "./SampleView";
+import ToneView from "./ToneView";
+
 export default function SourceView({
   source,
   onChange,
@@ -9,41 +11,28 @@ export default function SourceView({
   source: ThereminSource;
   onChange: (source: ThereminSource) => void;
 }) {
-  function innerComponent(): ReactElement {
+  function inner(): ReactElement {
     switch (source.type) {
+      case "tone":
+        return <ToneView oscillatorType={source.oscillatorType} />;
       case "sample":
         return (
-          <Button
-            title="Play"
-            onPress={() => {
-              const audioContext = new AudioContext();
-              const node = audioContext.createBufferSource();
-              node.buffer = source.sample;
-              node.onEnded = () => {
-                audioContext.close();
-              };
-              node.connect(audioContext.destination);
-              node.start();
+          <SampleView
+            sample={source.sample}
+            name={source.file?.name}
+            onSave={(name, uri) => {
+              onChange({
+                ...source,
+                file: { name, uri, reload: source.file?.reload ?? false },
+              });
             }}
           />
         );
-      case "oscillator":
-        return <Text>{source.oscillatorType}</Text>;
     }
   }
-
   return (
     <View style={{ flexDirection: "row" }}>
-      <TextInput
-        style={{ flex: 2, borderWidth: 1 }}
-        value={source.name}
-        placeholder="(Type name)"
-        placeholderTextColor="gray"
-        onChangeText={(text) => {
-          onChange({ ...source, name: text });
-        }}
-      />
-      <View style={{ flex: 1, borderWidth: 1 }}>{innerComponent()}</View>
+      <View style={{ flex: 1, borderWidth: 1 }}>{inner()}</View>
       <Switch
         value={source.selected}
         onValueChange={(v) => {

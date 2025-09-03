@@ -20,7 +20,10 @@ export default class SampleThereminNode implements ThereminNode {
   }
 
   handleCoord({ x, y, width, height }: Coord, time: number) {
-    this.bufferNode.detune.setValueAtTime((x - width / 2) * 5, time);
+    this.bufferNode.detune.setValueAtTime(
+      ((x - width / 2) / width) * 500,
+      time
+    );
     this.gainNode.gain.setValueAtTime((height - y) / height, time);
   }
 

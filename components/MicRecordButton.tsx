@@ -1,4 +1,5 @@
-import { useThereminSourceStore } from "@/global";
+import { useThereminSourceStore } from "@/global/state";
+import { genericAudioContext, trimInitialSilence } from "@/global/util";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import { useRef, useState } from "react";
 import { Button } from "react-native";
@@ -6,7 +7,6 @@ import {
   AudioBuffer,
   AudioManager,
   AudioRecorder,
-  OfflineAudioContext,
 } from "react-native-audio-api";
 
 AudioManager.setAudioSessionOptions({
@@ -20,11 +20,7 @@ AudioManager.requestRecordingPermissions();
 function concatenateAudioBuffers(buffers: AudioBuffer[]): AudioBuffer {
   const concatLength = buffers.map((b) => b.length).reduce((acc, l) => acc + l);
 
-  const newBuffer = new OfflineAudioContext({
-    numberOfChannels: 0,
-    sampleRate: 0,
-    length: 0,
-  }).createBuffer(
+  const newBuffer = genericAudioContext.createBuffer(
     buffers[0].numberOfChannels,
     concatLength,
     buffers[0].sampleRate
@@ -36,6 +32,7 @@ function concatenateAudioBuffers(buffers: AudioBuffer[]): AudioBuffer {
         yield* buffer.getChannelData(i);
       }
     })();
+
     // HACK: seems to return only zeroes if provided iterator directly
     newBuffer.copyToChannel(new Float32Array([...iterator]), i);
   }
@@ -45,8 +42,10 @@ function concatenateAudioBuffers(buffers: AudioBuffer[]): AudioBuffer {
 
 export default function MicRecordButton({
   recorder,
+  onRecord,
 }: {
   recorder: ThereminRecorder;
+  onRecord: (buffer: AudioBuffer) => void;
 }) {
   const [absoluteRecordingStartTime, setAbsoluteRecordingStartTime] = useState<
     number | null
@@ -59,19 +58,25 @@ export default function MicRecordButton({
   return (
     <Button
       title={
-        absoluteRecordingStartTime
-          ? "Stop mic recording"
-          : "Start mic recording"
+        absoluteRecordingStartTime ? "Disable microphone" : "Enable microphone"
       }
-      onPress={() => {
+      onPress={async () => {
+        if ((await AudioManager.checkRecordingPermissions()) !== "Granted") {
+          return;
+        }
+
         if (absoluteRecordingStartTime) {
           audioRecorderRef.current!.stop();
-          const recordingBuffer = concatenateAudioBuffers(buffersRef.current);
-          addSource({ type: "sample", sample: recordingBuffer });
+
+          const recordingBuffer = trimInitialSilence(
+            concatenateAudioBuffers(buffersRef.current)
+          );
+          onRecord(recordingBuffer);
           recorder.addMicRecording({
             buffer: recordingBuffer,
             absoluteTime: absoluteRecordingStartTime,
           });
+
           setAbsoluteRecordingStartTime(null);
           audioRecorderRef.current = null;
           buffersRef.current = [];
@@ -84,6 +89,7 @@ export default function MicRecordButton({
             buffersRef.current.push(e.buffer);
           });
           recorder.start();
+
           audioRecorderRef.current = recorder;
           setAbsoluteRecordingStartTime(Date.now());
         }

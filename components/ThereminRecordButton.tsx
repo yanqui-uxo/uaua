@@ -1,3 +1,4 @@
+import { trimInitialSilence } from "@/global/util";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import { useState } from "react";
 import { Button } from "react-native";
@@ -15,9 +16,9 @@ export default function ThereminRecordButton({
     <>
       <Button
         title={isRecording ? "Stop recording" : "Start recording"}
-        onPress={() => {
+        onPress={async () => {
           if (isRecording) {
-            recorder.stopRecording().then(onRecord);
+            onRecord(trimInitialSilence(await recorder.stopRecording()));
           } else {
             recorder.startRecording();
           }

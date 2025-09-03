@@ -1,5 +1,11 @@
 import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
 
+export const genericAudioContext = new OfflineAudioContext({
+  numberOfChannels: 0,
+  length: 0,
+  sampleRate: 44100,
+});
+
 export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer {
   const channels: Float32Array[] = [];
   for (let i = 0; i < buffer.numberOfChannels; i++) {
@@ -11,11 +17,7 @@ export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer {
 
   const newChannels = channels.map((c) => c.slice(firstNonZeroIndex));
 
-  const newBuffer = new OfflineAudioContext({
-    numberOfChannels: 0,
-    length: 0,
-    sampleRate: 0,
-  }).createBuffer(
+  const newBuffer = genericAudioContext.createBuffer(
     buffer.numberOfChannels,
     newChannels[0].length,
     buffer.sampleRate
