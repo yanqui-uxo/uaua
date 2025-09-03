@@ -20,7 +20,6 @@ export default function SourceList() {
   const setIndex = useThereminSourceStore((state) => state.setIndex);
 
   async function loadSamples() {
-    console.log("hello");
     setSources(sources.filter((s) => s.type !== "sample" || !s.file?.reload));
 
     for (const { name, uri } of await sampleFilesData()) {
@@ -30,7 +29,6 @@ export default function SourceList() {
 
       try {
         const buf = await genericAudioContext.decodeAudioDataSource(uri);
-        console.log(buf);
         addSource({
           type: "sample",
           sample: buf,

@@ -1,5 +1,9 @@
 import { useThereminSourceStore } from "@/global/state";
-import { genericAudioContext, trimInitialSilence } from "@/global/util";
+import {
+  genericAudioContext,
+  sampleRate,
+  trimInitialSilence,
+} from "@/global/util";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import { useRef, useState } from "react";
 import { Button } from "react-native";
@@ -82,8 +86,8 @@ export default function MicRecordButton({
           buffersRef.current = [];
         } else {
           const recorder = new AudioRecorder({
-            sampleRate: 44100,
-            bufferLengthInSamples: 441,
+            sampleRate,
+            bufferLengthInSamples: Math.round(sampleRate / 100),
           });
           recorder.onAudioReady((e) => {
             buffersRef.current.push(e.buffer);

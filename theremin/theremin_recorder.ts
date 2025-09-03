@@ -1,3 +1,4 @@
+import { sampleRate } from "@/global/util";
 import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
@@ -67,7 +68,6 @@ export default class ThereminRecorder {
     const absoluteToContextTime = (time: number) =>
       (time - this.absoluteRecordingStartTime!) / 1000;
 
-    const sampleRate = 44100;
     const offlineAudioContext = new OfflineAudioContext({
       numberOfChannels: 2,
       length: absoluteToContextTime(Date.now()) * sampleRate,
