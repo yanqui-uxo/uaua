@@ -18,6 +18,7 @@ export default function SampleView({
   return (
     <View style={{ flexDirection: "row" }}>
       <TextInput
+        style={{ flex: 1, borderWidth: 1 }}
         onChangeText={setNewName}
         value={newName}
         placeholder="Enter name"

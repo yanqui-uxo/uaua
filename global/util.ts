@@ -1,9 +1,10 @@
 import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
 
+export const sampleRate = 44100;
 export const genericAudioContext = new OfflineAudioContext({
   numberOfChannels: 0,
   length: 0,
-  sampleRate: 44100,
+  sampleRate,
 });
 
 export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer {

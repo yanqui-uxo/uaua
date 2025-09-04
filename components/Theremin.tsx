@@ -36,12 +36,11 @@ export default function Theremin({
     setTouches(confirmedTouches);
 
     for (const id of changedIds) {
-      const node = nodesRef.current.get(id)!;
-      node.disconnect();
+      nodesRef.current.get(id)?.disconnect();
     }
 
     if (confirmedTouches.length === 0) {
-      audioContextRef.current!.close();
+      audioContextRef.current?.close();
       audioContextRef.current = null;
     }
   }
@@ -61,6 +60,7 @@ export default function Theremin({
           makeNode
         );
         nodesRef.current.set(t.id, node);
+
         // handleCoord does nothing if given 0 as the time
         node.handleCoord(
           {
@@ -71,6 +71,7 @@ export default function Theremin({
           },
           Number.MIN_VALUE
         );
+
         node.connect(audioContextRef.current.destination);
         node.start();
       }
@@ -78,7 +79,22 @@ export default function Theremin({
     .onTouchesMove((e) => {
       setTouches(e.allTouches);
 
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+
       for (const t of e.changedTouches) {
+        if (!nodesRef.current.has(t.id)) {
+          nodesRef.current.set(
+            t.id,
+            new ThereminRecorderNode(
+              audioContextRef.current,
+              recorder,
+              makeNode
+            )
+          );
+        }
+
         nodesRef.current.get(t.id)!.handleCoord(
           {
             x: t.x,
