@@ -1,4 +1,4 @@
-import MicButton from "@/components/MicRecordButton";
+import MicButton from "@/components/MicButton";
 import ThereminCollection from "@/components/ThereminCollection";
 import ThereminRecordButton from "@/components/ThereminRecordButton";
 import { useThereminSourceStore } from "@/global/state";
@@ -22,12 +22,7 @@ export default function Index() {
             addSource({ type: "sample", sample: buf });
           }}
         />
-        <MicButton
-          recorder={recorder}
-          onRecord={(buf) => {
-            addSource({ type: "sample", sample: buf });
-          }}
-        />
+        <MicButton recorder={recorder} />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

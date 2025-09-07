@@ -18,7 +18,12 @@ export default function ThereminRecordButton({
         title={isRecording ? "Stop recording" : "Start recording"}
         onPress={async () => {
           if (isRecording) {
-            onRecord(trimInitialSilence(await recorder.stopRecording()));
+            const buffer = await recorder.stopRecording();
+            const trimmedBuffer = trimInitialSilence(buffer);
+
+            if (trimmedBuffer) {
+              onRecord(trimmedBuffer);
+            }
           } else {
             recorder.startRecording();
           }

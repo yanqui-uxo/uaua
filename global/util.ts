@@ -7,7 +7,7 @@ export const genericAudioContext = new OfflineAudioContext({
   sampleRate,
 });
 
-export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer {
+export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer | null {
   const channels: Float32Array[] = [];
   for (let i = 0; i < buffer.numberOfChannels; i++) {
     channels.push(buffer.getChannelData(i));
@@ -17,6 +17,10 @@ export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer {
   );
 
   const newChannels = channels.map((c) => c.slice(firstNonZeroIndex));
+
+  if (newChannels[0].length === 0) {
+    return null;
+  }
 
   const newBuffer = genericAudioContext.createBuffer(
     buffer.numberOfChannels,

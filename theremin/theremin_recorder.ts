@@ -1,19 +1,78 @@
-import { sampleRate } from "@/global/util";
-import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
+import { genericAudioContext, sampleRate } from "@/global/util";
+import {
+  AudioBuffer,
+  AudioManager,
+  AudioRecorder,
+  OfflineAudioContext,
+} from "react-native-audio-api";
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: "playAndRecord",
+  iosMode: "spokenAudio",
+  iosOptions: ["defaultToSpeaker", "allowBluetoothA2DP"],
+});
+
+AudioManager.requestRecordingPermissions();
 
 // absolute time is current unix timestamp in ms
 export type ThereminStep = { coord: Coord; absoluteTime: number };
 type ThereminRecording = { steps: ThereminStep[]; absoluteStopTime: number };
-type MicRecording = { buffer: AudioBuffer; absoluteTime: number };
+type MicSession = { buffers: AudioBuffer[]; absoluteStartTime: number };
+
+function concatenateAudioBuffers(buffers: AudioBuffer[]): AudioBuffer {
+  const concatLength = buffers.map((b) => b.length).reduce((acc, l) => acc + l);
+
+  const newBuffer = genericAudioContext.createBuffer(
+    buffers[0].numberOfChannels,
+    concatLength,
+    buffers[0].sampleRate
+  );
+
+  for (let i = 0; i < buffers[0].numberOfChannels; i++) {
+    const iterator = (function* () {
+      for (const buffer of buffers) {
+        yield* buffer.getChannelData(i);
+      }
+    })();
+
+    // HACK: seems to return only zeroes if provided iterator directly
+    newBuffer.copyToChannel(new Float32Array([...iterator]), i);
+  }
+
+  return newBuffer;
+}
 
 export default class ThereminRecorder {
   private absoluteRecordingStartTime: number | null = null;
   private steps: Map<ThereminNodeIdentifier, ThereminStep[]> = new Map();
   private thereminRecordings: Map<ThereminNodeIdentifier, ThereminRecording> =
     new Map();
-  private micRecordings: MicRecording[] = [];
+
+  private currentMicSession: MicSession | null = null;
+  private micSessions: MicSession[] = [];
+  private micRecorder: AudioRecorder = (() => {
+    const recorder = new AudioRecorder({
+      sampleRate,
+      bufferLengthInSamples: Math.round(sampleRate / 100),
+    });
+    recorder.onAudioReady((e) => {
+      if (!this.absoluteRecordingStartTime) {
+        return;
+      }
+
+      if (!this.currentMicSession) {
+        this.currentMicSession = {
+          buffers: [],
+          absoluteStartTime: Date.now() - e.buffer.duration * 1000,
+        };
+      }
+
+      this.currentMicSession.buffers.push(e.buffer);
+    });
+    return recorder;
+  })();
 
   addStep(id: ThereminNodeIdentifier, coord: Coord) {
     if (!this.steps.has(id)) {
@@ -46,10 +105,26 @@ export default class ThereminRecorder {
     });
   }
 
-  addMicRecording(recording: MicRecording) {
-    if (this.absoluteRecordingStartTime) {
-      this.micRecordings.push(recording);
+  async startMic(): Promise<boolean> {
+    if ((await AudioManager.checkRecordingPermissions()) !== "Granted") {
+      return false;
     }
+    this.micRecorder.start();
+    return true;
+  }
+
+  private cleanMicSessions() {
+    if (!this.currentMicSession) {
+      return;
+    }
+
+    this.micSessions.push(this.currentMicSession);
+    this.currentMicSession = null;
+  }
+
+  stopMic() {
+    this.micRecorder.stop();
+    this.cleanMicSessions();
   }
 
   startRecording() {
@@ -61,6 +136,8 @@ export default class ThereminRecorder {
       throw new Error("Cannot stop recording that has not been started");
     }
 
+    this.cleanMicSessions();
+
     for (const id of this.steps.keys()) {
       this.stopNode(id);
     }
@@ -70,7 +147,7 @@ export default class ThereminRecorder {
 
     const offlineAudioContext = new OfflineAudioContext({
       numberOfChannels: 2,
-      length: absoluteToContextTime(Date.now()) * sampleRate,
+      length: Math.ceil(absoluteToContextTime(Date.now()) * sampleRate),
       sampleRate,
     });
 
@@ -97,11 +174,14 @@ export default class ThereminRecorder {
       node.connect(offlineAudioContext.destination);
     }
 
-    for (const { buffer, absoluteTime } of this.micRecordings) {
-      const time = absoluteToContextTime(absoluteTime);
+    for (const { buffers, absoluteStartTime } of this.micSessions) {
+      const time = absoluteToContextTime(absoluteStartTime);
 
       const node = offlineAudioContext.createBufferSource();
-      node.buffer = buffer;
+      node.buffer = concatenateAudioBuffers(buffers);
+      node.connect(offlineAudioContext.destination);
+      console.log(node.buffer);
+      console.log(time);
 
       if (time > 0) {
         node.start(time);
@@ -112,7 +192,7 @@ export default class ThereminRecorder {
 
     this.absoluteRecordingStartTime = null;
     this.thereminRecordings = new Map();
-    this.micRecordings = [];
+    this.micSessions = [];
 
     return offlineAudioContext.startRendering();
   }
