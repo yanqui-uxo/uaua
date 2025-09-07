@@ -180,8 +180,6 @@ export default class ThereminRecorder {
       const node = offlineAudioContext.createBufferSource();
       node.buffer = concatenateAudioBuffers(buffers);
       node.connect(offlineAudioContext.destination);
-      console.log(node.buffer);
-      console.log(time);
 
       if (time > 0) {
         node.start(time);
