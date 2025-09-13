@@ -10,6 +10,7 @@ import {
   GestureTouchEvent,
   TouchData,
 } from "react-native-gesture-handler";
+import { useSharedValue } from "react-native-reanimated";
 
 export default function Theremin({
   recorder,
@@ -21,8 +22,7 @@ export default function Theremin({
   backgroundColor: string;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
-  const widthRef = useRef<number | null>(null);
-  const heightRef = useRef<number | null>(null);
+  const size = useSharedValue({ width: 0, height: 0 });
   const nodesRef = useRef<Map<number, ThereminRecorderNode>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -66,8 +66,8 @@ export default function Theremin({
           {
             x: t.x,
             y: t.y,
-            width: widthRef.current!,
-            height: heightRef.current!,
+            width: size.get().width,
+            height: size.get().height,
           },
           Number.MIN_VALUE
         );
@@ -99,8 +99,8 @@ export default function Theremin({
           {
             x: t.x,
             y: t.y,
-            width: widthRef.current!,
-            height: heightRef.current!,
+            width: size.get().width,
+            height: size.get().height,
           },
           audioContextRef.current!.currentTime
         );
@@ -113,14 +113,7 @@ export default function Theremin({
 
   return (
     <GestureDetector gesture={gesture}>
-      <Canvas
-        style={{ flex: 1, backgroundColor }}
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          widthRef.current = width;
-          heightRef.current = height;
-        }}
-      >
+      <Canvas style={{ flex: 1, backgroundColor }} onSize={size}>
         {touches.map((t) => (
           <Circle cx={t.x} cy={t.y} r={50} key={t.id}></Circle>
         ))}

@@ -20,10 +20,15 @@ export default function SourceList() {
   const setIndex = useThereminSourceStore((state) => state.setIndex);
 
   async function loadSamples() {
-    setSources(sources.filter((s) => s.type !== "sample" || !s.file?.reload));
+    const newSources = sources.filter(
+      (s) => s.type !== "sample" || !s.file?.reload
+    );
+    setSources(newSources);
 
     for (const { name, uri } of await sampleFilesData()) {
-      if (sources.some((s) => s.type === "sample" && s.file?.name === name)) {
+      if (
+        newSources.some((s) => s.type === "sample" && s.file?.name === name)
+      ) {
         continue;
       }
 
@@ -36,7 +41,7 @@ export default function SourceList() {
         });
       } catch (e) {
         // TODO: proper error handling
-        console.error(`Error loading from URI ${uri} (${e})`);
+        console.warn(`Error loading from URI ${uri} (${e})`);
       }
     }
   }

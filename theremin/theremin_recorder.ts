@@ -75,12 +75,8 @@ export default class ThereminRecorder {
   })();
 
   addStep(id: ThereminNodeIdentifier, coord: Coord) {
-    if (!this.steps.has(id)) {
-      this.steps.set(id, []);
-    }
-
     const step: ThereminStep = { coord, absoluteTime: Date.now() };
-    if (this.absoluteRecordingStartTime) {
+    if (this.absoluteRecordingStartTime && this.steps.has(id)) {
       this.steps.get(id)!.push(step);
     } else {
       this.steps.set(id, [step]);

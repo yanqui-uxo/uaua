@@ -20,11 +20,11 @@ export default class SampleThereminNode implements ThereminNode {
   }
 
   handleCoord({ x, y, width, height }: Coord, time: number) {
-    this.bufferNode.detune.setValueAtTime(
+    this.bufferNode.detune.linearRampToValueAtTime(
       ((x - width / 2) / width) * 500,
       time
     );
-    this.gainNode.gain.setValueAtTime((height - y) / height, time);
+    this.gainNode.gain.linearRampToValueAtTime((height - y) / height, time);
   }
 
   connect(destination: AudioDestinationNode) {
