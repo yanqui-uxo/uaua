@@ -25,7 +25,7 @@ export default function SourceList() {
     );
     setSources(newSources);
 
-    for (const { name, uri } of await sampleFilesData()) {
+    for (const { name, uri } of sampleFilesData()) {
       if (
         newSources.some((s) => s.type === "sample" && s.file?.name === name)
       ) {

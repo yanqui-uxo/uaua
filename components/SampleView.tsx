@@ -1,5 +1,5 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { File, Paths } from "expo-file-system/next";
+import { File, Paths } from "expo-file-system";
 import { useState } from "react";
 import { Alert, Button, TextInput, View } from "react-native";
 import { AudioBuffer, AudioContext } from "react-native-audio-api";

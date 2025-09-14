@@ -1,5 +1,5 @@
 import { randomUUID } from "expo-crypto";
-import { Directory, File, Paths } from "expo-file-system/next";
+import { Directory, File, Paths } from "expo-file-system";
 import { AudioBuffer, OscillatorType } from "react-native-audio-api";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
@@ -26,12 +26,15 @@ type ThereminSourceState = {
   setIndex: (index: number, source: ThereminSource) => void;
 };
 
-export async function sampleFilesData(): Promise<SampleFileData[]> {
+export function sampleFilesData(): SampleFileData[] {
   const data: SampleFileData[] = [];
 
   async function iterateDirectory(directory: Directory) {
     for (const content of directory.list()) {
       if (content instanceof File) {
+        if (!content.exists) {
+          return;
+        }
         data.push({ name: content.name, uri: content.uri });
       } else if (content instanceof Directory) {
         await iterateDirectory(content);
@@ -39,7 +42,7 @@ export async function sampleFilesData(): Promise<SampleFileData[]> {
     }
   }
 
-  await iterateDirectory(Paths.document);
+  iterateDirectory(Paths.document);
   return data;
 }
 
