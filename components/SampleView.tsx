@@ -61,6 +61,7 @@ export default function SampleView({
           );
 
           file.write(data);
+          onSave(newName, file.uri);
         }}
       />
     </View>

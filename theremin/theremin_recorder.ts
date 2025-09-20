@@ -1,4 +1,4 @@
-import { genericAudioContext, sampleRate } from "@/global/util";
+import { concatenateAudioBuffers, sampleRate } from "@/global/audio_util";
 import {
   AudioBuffer,
   AudioManager,
@@ -8,41 +8,10 @@ import {
 import { Coord } from "./theremin_node";
 import ThereminNodeIdentifier from "./theremin_node_identifier";
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: "playAndRecord",
-  iosMode: "spokenAudio",
-  iosOptions: ["defaultToSpeaker", "allowBluetoothA2DP"],
-});
-
-AudioManager.requestRecordingPermissions();
-
 // absolute time is current unix timestamp in ms
 export type ThereminStep = { coord: Coord; absoluteTime: number };
 type ThereminRecording = { steps: ThereminStep[]; absoluteStopTime: number };
 type MicSession = { buffers: AudioBuffer[]; absoluteStartTime: number };
-
-function concatenateAudioBuffers(buffers: AudioBuffer[]): AudioBuffer {
-  const concatLength = buffers.map((b) => b.length).reduce((acc, l) => acc + l);
-
-  const newBuffer = genericAudioContext.createBuffer(
-    buffers[0].numberOfChannels,
-    concatLength,
-    buffers[0].sampleRate
-  );
-
-  for (let i = 0; i < buffers[0].numberOfChannels; i++) {
-    const iterator = (function* () {
-      for (const buffer of buffers) {
-        yield* buffer.getChannelData(i);
-      }
-    })();
-
-    // HACK: seems to return only zeroes if provided iterator directly
-    newBuffer.copyToChannel(new Float32Array([...iterator]), i);
-  }
-
-  return newBuffer;
-}
 
 export default class ThereminRecorder {
   private absoluteRecordingStartTime: number | null = null;

@@ -1,36 +1,48 @@
-import { AudioBuffer, OfflineAudioContext } from "react-native-audio-api";
-
-export const sampleRate = 44100;
-export const genericAudioContext = new OfflineAudioContext({
-  numberOfChannels: 0,
-  length: 0,
-  sampleRate,
-});
-
-export function trimInitialSilence(buffer: AudioBuffer): AudioBuffer | null {
-  const channels: Float32Array[] = [];
-  for (let i = 0; i < buffer.numberOfChannels; i++) {
-    channels.push(buffer.getChannelData(i));
-  }
+export function trimInitialSilenceFromChannels(
+  channels: Float32Array[]
+): Float32Array[] {
   const firstNonZeroIndex = Math.min(
     ...channels.map((c) => c.findIndex((x) => x !== 0)).filter((i) => i !== -1)
   );
 
   const newChannels = channels.map((c) => c.slice(firstNonZeroIndex));
 
-  if (newChannels[0].length === 0) {
-    return null;
+  return newChannels;
+}
+
+export function scale({
+  value,
+  scaleBeginning = 0,
+  scaleEnd,
+  min,
+  max,
+}: {
+  value: number;
+  scaleBeginning?: number;
+  scaleEnd: number;
+  min: number;
+  max: number;
+}): number {
+  if (min > max) {
+    throw new Error(`Min must be smaller than max (${min} < ${max})`);
+  }
+  if (value < scaleBeginning || value > scaleEnd) {
+    throw new Error(
+      `Value must be within scale (${scaleBeginning} < ${value} < ${scaleEnd})`
+    );
+  }
+  if (scaleEnd < scaleBeginning) {
+    throw new Error(
+      `Scale beginning must be less than scale end (${scaleBeginning} < ${scaleEnd})`
+    );
+  }
+  if (scaleBeginning === scaleEnd) {
+    throw new Error(
+      `Scale beginning cannot equal scale end (${scaleBeginning})`
+    );
   }
 
-  const newBuffer = genericAudioContext.createBuffer(
-    buffer.numberOfChannels,
-    newChannels[0].length,
-    buffer.sampleRate
+  return (
+    min + ((max - min) * (value - scaleBeginning)) / (scaleEnd - scaleBeginning)
   );
-
-  for (const [i, channel] of newChannels.entries()) {
-    newBuffer.copyToChannel(channel, i);
-  }
-
-  return newBuffer;
 }

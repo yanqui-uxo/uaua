@@ -1,5 +1,5 @@
+import { genericAudioContext } from "@/global/audio_util";
 import { useThereminSourceStore } from "@/global/state";
-import { genericAudioContext } from "@/global/util";
 import { Button, FlatList } from "react-native";
 import { OscillatorType } from "react-native-audio-api";
 import SourceView from "./SourceView";

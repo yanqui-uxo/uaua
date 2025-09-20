@@ -1,3 +1,4 @@
+import { scale } from "@/global/util";
 import {
   AudioDestinationNode,
   BaseAudioContext,
@@ -7,6 +8,8 @@ import {
 } from "react-native-audio-api";
 import ThereminNode, { Coord } from "./theremin_node";
 
+export const MIN_FREQUENCY = 50;
+export const MAX_FREQUENCY = 1000;
 export default class ToneThereminNode implements ThereminNode {
   private oscillatorType: OscillatorType;
   private oscillatorNode: OscillatorNode;
@@ -21,11 +24,10 @@ export default class ToneThereminNode implements ThereminNode {
   }
 
   handleCoord({ x, y, width, height }: Coord, time: number) {
-    this.oscillatorNode.frequency.linearRampToValueAtTime(
-      (x / width) * 600,
-      time
-    );
-    this.gainNode.gain.linearRampToValueAtTime((height - y) / height, time);
+    const frequency = scale({ value: x, scaleEnd: width, min: 50, max: 1000 });
+    const gain = scale({ value: height - y, scaleEnd: height, min: 0, max: 1 });
+    this.oscillatorNode.frequency.linearRampToValueAtTime(frequency, time);
+    this.gainNode.gain.linearRampToValueAtTime(gain, time);
   }
 
   connect(destination: AudioDestinationNode) {

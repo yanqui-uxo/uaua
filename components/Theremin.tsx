@@ -1,7 +1,7 @@
 import { ThereminNodeMaker } from "@/theremin/theremin_node_identifier";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import ThereminRecorderNode from "@/theremin/theremin_recorder_node";
-import { Canvas, Circle } from "@shopify/react-native-skia";
+import { Canvas, Circle, useCanvasSize } from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
 import { AudioContext } from "react-native-audio-api";
 import {
@@ -10,8 +10,8 @@ import {
   GestureTouchEvent,
   TouchData,
 } from "react-native-gesture-handler";
-import { useSharedValue } from "react-native-reanimated";
 
+// TODO: move business logic to own file to aid testability
 export default function Theremin({
   recorder,
   makeNode,
@@ -22,7 +22,10 @@ export default function Theremin({
   backgroundColor: string;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
-  const size = useSharedValue({ width: 0, height: 0 });
+  const {
+    ref,
+    size: { width, height },
+  } = useCanvasSize();
   const nodesRef = useRef<Map<number, ThereminRecorderNode>>(new Map());
   const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -66,8 +69,8 @@ export default function Theremin({
           {
             x: t.x,
             y: t.y,
-            width: size.get().width,
-            height: size.get().height,
+            width,
+            height,
           },
           Number.MIN_VALUE
         );
@@ -99,8 +102,8 @@ export default function Theremin({
           {
             x: t.x,
             y: t.y,
-            width: size.get().width,
-            height: size.get().height,
+            width,
+            height,
           },
           audioContextRef.current!.currentTime
         );
@@ -113,7 +116,7 @@ export default function Theremin({
 
   return (
     <GestureDetector gesture={gesture}>
-      <Canvas style={{ flex: 1, backgroundColor }} onSize={size}>
+      <Canvas style={{ flex: 1, backgroundColor }} ref={ref}>
         {touches.map((t) => (
           <Circle cx={t.x} cy={t.y} r={50} key={t.id}></Circle>
         ))}

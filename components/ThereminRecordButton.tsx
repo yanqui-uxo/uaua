@@ -1,4 +1,4 @@
-import { trimInitialSilence } from "@/global/util";
+import { trimInitialSilence } from "@/global/audio_util";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import { useState } from "react";
 import { Button } from "react-native";

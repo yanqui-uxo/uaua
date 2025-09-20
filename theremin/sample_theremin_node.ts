@@ -1,3 +1,4 @@
+import { scale } from "@/global/util";
 import {
   AudioBuffer,
   AudioBufferSourceNode,
@@ -20,11 +21,10 @@ export default class SampleThereminNode implements ThereminNode {
   }
 
   handleCoord({ x, y, width, height }: Coord, time: number) {
-    this.bufferNode.detune.linearRampToValueAtTime(
-      ((x - width / 2) / width) * 500,
-      time
-    );
-    this.gainNode.gain.linearRampToValueAtTime((height - y) / height, time);
+    const detune = scale({ value: x, scaleEnd: width, min: -500, max: 500 });
+    const gain = scale({ value: height - y, scaleEnd: height, min: 0, max: 1 });
+    this.bufferNode.detune.linearRampToValueAtTime(detune, time);
+    this.gainNode.gain.linearRampToValueAtTime(gain, time);
   }
 
   connect(destination: AudioDestinationNode) {
