@@ -3,6 +3,7 @@ import ThereminCollection from "@/components/ThereminCollection";
 import ThereminRecordButton from "@/components/ThereminRecordButton";
 import { useThereminSourceStore } from "@/global/state";
 import ThereminRecorder from "@/theremin/theremin_recorder";
+import { randomUUID } from "expo-crypto";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,7 +21,7 @@ export default function Index() {
         <ThereminRecordButton
           recorder={recorder}
           onRecord={(buf) => {
-            addSource({ type: "sample", sample: buf });
+            addSource({ type: "sample", sample: buf }, randomUUID());
           }}
         />
         <MicButton recorder={recorder} />

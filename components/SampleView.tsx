@@ -1,69 +1,83 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { File, Paths } from "expo-file-system";
 import { useState } from "react";
-import { Alert, Button, TextInput, View } from "react-native";
-import { AudioBuffer, AudioContext } from "react-native-audio-api";
+import { Alert, TextInput, View } from "react-native";
+import { AudioBuffer } from "react-native-audio-api";
 import { encode } from "wav-encoder";
+
+async function save(sample: AudioBuffer, file: File) {
+  if (file.exists) {
+    throw new Error("Cannot overwrite existing file");
+  }
+
+  const channels: Float32Array[] = [];
+  for (let i = 0; i < sample.numberOfChannels; i++) {
+    channels.push(sample.getChannelData(i));
+  }
+
+  const data = new Uint8Array(
+    await encode({
+      sampleRate: sample.sampleRate,
+      channelData: channels,
+    })
+  );
+
+  file.write(data);
+}
 
 export default function SampleView({
   sample,
   name,
-  onSave,
+  id,
+  onNameChange,
 }: {
   sample: AudioBuffer;
   name?: string;
-  onSave: (name: string, uri: string) => void;
+  id: string;
+  onNameChange: (name: string) => void;
 }) {
-  const [newName, setNewName] = useState(name ?? "");
+  const file = new File(Paths.document, `${id}.wav`);
+  const [fileExists, setFileExists] = useState(file.exists);
   return (
     <View style={{ flexDirection: "row" }}>
       <TextInput
         style={{ flex: 1, borderWidth: 1 }}
-        onChangeText={setNewName}
-        value={newName}
+        onChangeText={onNameChange}
+        value={name}
         placeholder="Enter name"
         placeholderTextColor="gray"
       />
-      <Button
-        title="Play"
-        onPress={() => {
-          const audioContext = new AudioContext();
-          const node = audioContext.createBufferSource();
-          node.buffer = sample;
-          node.onEnded = () => {
-            audioContext.close();
-          };
-          node.connect(audioContext.destination);
-          node.start();
-        }}
-      />
-      <FontAwesome.Button
-        name="save"
-        onPress={async () => {
-          const file = new File(Paths.document, newName);
-          if (file.exists) {
-            Alert.alert("Error", "Cannot overwrite existing file", [
-              { text: "OK" },
+      {!fileExists && (
+        <FontAwesome.Button
+          name="save"
+          onPress={() => {
+            if (file.exists) {
+              return;
+            }
+            save(sample, file);
+            setFileExists(true);
+          }}
+        />
+      )}
+      {fileExists && (
+        <FontAwesome.Button
+          name="trash"
+          onPress={() => {
+            Alert.alert("Are you sure you want to delete this file?", "", [
+              {
+                text: "Yes",
+                onPress: () => {
+                  if (file.exists) {
+                    file.delete();
+                  }
+                  setFileExists(false);
+                },
+              },
+              { text: "No" },
             ]);
-            return;
-          }
-
-          const channels: Float32Array[] = [];
-          for (let i = 0; i < sample.numberOfChannels; i++) {
-            channels.push(sample.getChannelData(i));
-          }
-
-          const data = new Uint8Array(
-            await encode({
-              sampleRate: sample.sampleRate,
-              channelData: channels,
-            })
-          );
-
-          file.write(data);
-          onSave(newName, file.uri);
-        }}
-      />
+          }}
+        />
+      )}
     </View>
   );
 }

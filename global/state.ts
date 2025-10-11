@@ -1,57 +1,30 @@
-import { randomUUID } from "expo-crypto";
-import { Directory, File, Paths } from "expo-file-system";
 import { AudioBuffer, OscillatorType } from "react-native-audio-api";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-type SampleFileData = { name: string; uri: string };
-type SampleSourceData = {
-  type: "sample";
-  sample: AudioBuffer;
-  file?: SampleFileData & { reload: boolean };
-};
 type ThereminSourceData =
-  | SampleSourceData
+  | { type: "sample"; sample: AudioBuffer }
   | { type: "tone"; oscillatorType: OscillatorType };
 export type ThereminSource = ThereminSourceData & {
+  name?: string;
   selected: boolean;
   id: string;
 };
 
 type ThereminSourceState = {
   sources: ThereminSource[];
-  addSource: (s: ThereminSourceData) => void;
+  addSource: (s: ThereminSourceData, id: string) => void;
   removeSource: (index: number) => void;
   setSources: (s: ThereminSource[]) => void;
   setIndex: (index: number, source: ThereminSource) => void;
 };
 
-export function sampleFilesData(): SampleFileData[] {
-  const data: SampleFileData[] = [];
-
-  async function iterateDirectory(directory: Directory) {
-    for (const content of directory.list()) {
-      if (content instanceof File) {
-        if (!content.exists) {
-          return;
-        }
-        data.push({ name: content.name, uri: content.uri });
-      } else if (content instanceof Directory) {
-        await iterateDirectory(content);
-      }
-    }
-  }
-
-  iterateDirectory(Paths.document);
-  return data;
-}
-
 export const useThereminSourceStore = create<ThereminSourceState>()(
   immer((set) => ({
     sources: [],
-    addSource: (s: ThereminSourceData) => {
+    addSource: (s: ThereminSourceData, id: string) => {
       set((state) => {
-        state.sources.push({ ...s, selected: true, id: randomUUID() });
+        state.sources.push({ ...s, id, selected: true });
       });
     },
     removeSource: (index: number) => {

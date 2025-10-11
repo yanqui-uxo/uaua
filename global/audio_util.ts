@@ -8,7 +8,7 @@ import { trimInitialSilenceFromChannels } from "./util";
 AudioManager.setAudioSessionOptions({
   iosCategory: "playAndRecord",
   iosMode: "spokenAudio",
-  iosOptions: ["defaultToSpeaker", "allowBluetoothA2DP"],
+  iosOptions: ["defaultToSpeaker", "mixWithOthers"],
 });
 
 AudioManager.requestRecordingPermissions();

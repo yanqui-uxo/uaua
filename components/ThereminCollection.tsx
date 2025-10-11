@@ -38,6 +38,7 @@ export default function ThereminCollection({
         makeNode={thereminSourceToNodeMaker(s)}
         key={s.id}
         backgroundColor={colors[i % colors.length]}
+        text={s.name}
       />
     ));
 }

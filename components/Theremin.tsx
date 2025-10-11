@@ -1,7 +1,13 @@
 import { ThereminNodeMaker } from "@/theremin/theremin_node_identifier";
 import ThereminRecorder from "@/theremin/theremin_recorder";
 import ThereminRecorderNode from "@/theremin/theremin_recorder_node";
-import { Canvas, Circle, useCanvasSize } from "@shopify/react-native-skia";
+import {
+  Canvas,
+  Circle,
+  matchFont,
+  Text,
+  useCanvasSize,
+} from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
 import { AudioContext } from "react-native-audio-api";
 import {
@@ -11,15 +17,18 @@ import {
   TouchData,
 } from "react-native-gesture-handler";
 
-// TODO: move business logic to own file to aid testability
+const font = matchFont({ fontFamily: "Helvetica", fontSize: 20 });
+
 export default function Theremin({
   recorder,
   makeNode,
   backgroundColor,
+  text,
 }: {
   recorder: ThereminRecorder;
   makeNode: ThereminNodeMaker;
   backgroundColor: string;
+  text?: string;
 }) {
   const [touches, setTouches] = useState<TouchData[]>([]);
   const {
@@ -117,6 +126,7 @@ export default function Theremin({
   return (
     <GestureDetector gesture={gesture}>
       <Canvas style={{ flex: 1, backgroundColor }} ref={ref}>
+        {text && <Text x={10} y={height - 10} text={text} font={font} />}
         {touches.map((t) => (
           <Circle cx={t.x} cy={t.y} r={50} key={t.id}></Circle>
         ))}

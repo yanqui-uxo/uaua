@@ -9,7 +9,7 @@ import {
 import ThereminNode, { Coord } from "./theremin_node";
 
 export const MIN_FREQUENCY = 50;
-export const MAX_FREQUENCY = 1000;
+export const MAX_FREQUENCY = 1500;
 export default class ToneThereminNode implements ThereminNode {
   private oscillatorType: OscillatorType;
   private oscillatorNode: OscillatorNode;
@@ -24,7 +24,12 @@ export default class ToneThereminNode implements ThereminNode {
   }
 
   handleCoord({ x, y, width, height }: Coord, time: number) {
-    const frequency = scale({ value: x, scaleEnd: width, min: 50, max: 1000 });
+    const frequency = scale({
+      value: x,
+      scaleEnd: width,
+      min: MIN_FREQUENCY,
+      max: MAX_FREQUENCY,
+    });
     const gain = scale({ value: height - y, scaleEnd: height, min: 0, max: 1 });
     this.oscillatorNode.frequency.linearRampToValueAtTime(frequency, time);
     this.gainNode.gain.linearRampToValueAtTime(gain, time);

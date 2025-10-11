@@ -31,12 +31,10 @@ export default class ThereminRecorder {
         return;
       }
 
-      if (!this.currentMicSession) {
-        this.currentMicSession = {
-          buffers: [],
-          absoluteStartTime: Date.now() - e.buffer.duration * 1000,
-        };
-      }
+      this.currentMicSession ??= {
+        buffers: [],
+        absoluteStartTime: Date.now() - e.buffer.duration * 1000,
+      };
 
       this.currentMicSession.buffers.push(e.buffer);
     });
@@ -154,7 +152,7 @@ export default class ThereminRecorder {
     }
 
     this.absoluteRecordingStartTime = null;
-    this.thereminRecordings = new Map();
+    this.thereminRecordings.clear();
     this.micSessions = [];
 
     return offlineAudioContext.startRendering();

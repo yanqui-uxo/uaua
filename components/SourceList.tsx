@@ -1,10 +1,10 @@
 import { genericAudioContext } from "@/global/audio_util";
 import { useThereminSourceStore } from "@/global/state";
+import { randomUUID } from "expo-crypto";
+import { File, Paths } from "expo-file-system";
 import { Button, FlatList } from "react-native";
 import { OscillatorType } from "react-native-audio-api";
 import SourceView from "./SourceView";
-
-import { sampleFilesData } from "@/global/state";
 
 const oscillatorTypes: OscillatorType[] = [
   "sine",
@@ -18,30 +18,26 @@ export default function SourceList() {
   const addSource = useThereminSourceStore((state) => state.addSource);
   const setSources = useThereminSourceStore((state) => state.setSources);
   const setIndex = useThereminSourceStore((state) => state.setIndex);
+  const removeSource = useThereminSourceStore((state) => state.removeSource);
 
   async function loadSamples() {
-    const newSources = sources.filter(
-      (s) => s.type !== "sample" || !s.file?.reload
-    );
-    setSources(newSources);
+    const files = Paths.document.list().filter((x) => x instanceof File);
 
-    for (const { name, uri } of sampleFilesData()) {
-      if (
-        newSources.some((s) => s.type === "sample" && s.file?.name === name)
-      ) {
-        continue;
-      }
+    setSources(sources.filter((s) => s.type !== "sample"));
 
+    for (const file of files) {
       try {
-        const buf = await genericAudioContext.decodeAudioDataSource(uri);
-        addSource({
-          type: "sample",
-          sample: buf,
-          file: { name, uri, reload: true },
-        });
+        const buf = await genericAudioContext.decodeAudioDataSource(file.uri);
+        addSource(
+          {
+            type: "sample",
+            sample: buf,
+          },
+          file.name.replace(/\.[^.]*$/, "")
+        );
       } catch (e) {
         // TODO: proper error handling
-        console.warn(`Error loading from URI ${uri} (${e})`);
+        console.warn(`Error loading from URI ${file.uri} (${e})`);
       }
     }
   }
@@ -57,6 +53,9 @@ export default function SourceList() {
             onChange={(s) => {
               setIndex(index, s);
             }}
+            remove={() => {
+              removeSource(index);
+            }}
           />
         )}
         keyExtractor={(item) => item.id}
@@ -66,7 +65,7 @@ export default function SourceList() {
         <Button
           title={`New ${ot}`}
           onPress={() => {
-            addSource({ type: "tone", oscillatorType: ot });
+            addSource({ type: "tone", oscillatorType: ot }, randomUUID());
           }}
           key={ot}
         />
